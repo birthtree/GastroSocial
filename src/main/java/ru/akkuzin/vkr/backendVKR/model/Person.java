@@ -41,7 +41,7 @@ public class Person {
     private String patronymic;
 
     @Column(name ="isadmin")
-    private String isAdmin;
+    private boolean isAdmin;
 
 
     public Person() {
@@ -85,12 +85,12 @@ public class Person {
         this.patronymic = patronymic;
     }
 
-    public String getIsAdmin() {
+    public boolean isAdmin() {
         return isAdmin;
     }
 
-    public void setIsAdmin(String isAdmin) {
-        this.isAdmin = isAdmin;
+    public void setAdmin(boolean admin) {
+        isAdmin = admin;
     }
 
     public @NotNull String getPassword() {
