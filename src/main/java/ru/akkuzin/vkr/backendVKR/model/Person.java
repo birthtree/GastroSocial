@@ -1,10 +1,13 @@
 package ru.akkuzin.vkr.backendVKR.model;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+
+import java.util.List;
 
 @Entity
 @Table(name="Person")
@@ -43,6 +46,17 @@ public class Person {
     @Column(name ="isadmin")
     private boolean isAdmin;
 
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)//Указываем что связь один ко многим с полем owner из класса Item
+    @JsonBackReference
+    private List<Recept> recepts;//Т.к. у человека может быть не один предмет а много создаём список, чтобы хранить в нём все предметы человека
+
+    public List<Recept> getRecepts() {
+        return recepts;
+    }
+
+    public void setRecepts(List<Recept> recepts) {
+        this.recepts = recepts;
+    }
 
     public Person() {
     }

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/users")
 public class PeopleController {
     private final PeopleService peopleService;
 
@@ -75,5 +75,10 @@ public class PeopleController {
     public ResponseEntity<Person> getByEmail(@RequestParam("email") String email) {
         Person person = peopleService.findByEmail(email);
         return new ResponseEntity<>(person, HttpStatus.OK);
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<HttpStatus> deletePerson(@PathVariable int id) {
+        peopleService.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
     }
 }

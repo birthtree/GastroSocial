@@ -53,6 +53,12 @@ public class PeopleService {
         return peopleRepository.findByEmail(email)
                 .orElseThrow(() -> new PersonNotFoundException());
     }
-
+    @Transactional
+    public void deleteById(int id) {
+        if (!peopleRepository.existsById(id)) {
+            throw new PersonNotFoundException();
+        }
+        peopleRepository.deleteById(id);
+    }
 
 }
