@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.sql.Time;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "Recept")
@@ -34,6 +36,27 @@ public class Recept {
     @JoinColumn(name="person_id", referencedColumnName = "id")//Соотносим REFERENCES поле из таблицы с тем на какое оно указывает из другой таблцы
     @JsonBackReference
     private Person owner;
+
+    @Transient
+    private List<String> ingredientNames;
+
+
+    public List<String> getIngredientNames() {
+        return ingredientNames;
+    }
+
+    public void setIngredientNames(List<String> ingredientNames) {
+        this.ingredientNames = ingredientNames;
+    }
+
+    @ManyToMany
+    @JoinTable(
+            name = "Recept_ingredients",
+            joinColumns = @JoinColumn(name = "recept_id"),
+            inverseJoinColumns = @JoinColumn(name = "ingredient_id")
+    )
+    private Set<Ingredient> ingredients;
+
 
     public Person getOwner() {
         return owner;
@@ -93,5 +116,13 @@ public class Recept {
 
     public void setPrivate(@NotNull boolean aPrivate) {
         isPrivate = aPrivate;
+    }
+
+    public Set<Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    public void setIngredients(Set<Ingredient> ingredients) {
+        this.ingredients = ingredients;
     }
 }
