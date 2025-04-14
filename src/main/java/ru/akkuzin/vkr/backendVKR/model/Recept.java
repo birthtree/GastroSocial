@@ -57,6 +57,31 @@ public class Recept {
     )
     private Set<Ingredient> ingredients;
 
+    @ManyToMany
+    @JoinTable(name = "Recept_filters", joinColumns = @JoinColumn(name="recept_id"), inverseJoinColumns = @JoinColumn(name="filters_id"))
+    private Set<Filters> filters;
+
+
+     @ManyToMany
+     @JoinTable(name = "menu_recepts", joinColumns = @JoinColumn(name="recept_id"), inverseJoinColumns = @JoinColumn(name="menu_id"))
+     private Set<Menu> menus;
+
+
+    public Set<Menu> getMenus() {
+        return menus;
+    }
+
+    public void setMenus(Set<Menu> menus) {
+        this.menus = menus;
+    }
+
+    public Set<Filters> getFilters() {
+        return filters;
+    }
+
+    public void setFilters(Set<Filters> filters) {
+        this.filters = filters;
+    }
 
     public Person getOwner() {
         return owner;
