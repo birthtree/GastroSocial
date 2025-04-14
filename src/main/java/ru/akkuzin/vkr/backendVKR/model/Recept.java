@@ -58,12 +58,18 @@ public class Recept {
     private Set<Ingredient> ingredients;
 
     @ManyToMany
-    @JoinTable(name = "Recept_filters", joinColumns = @JoinColumn(name="recept_id"), inverseJoinColumns = @JoinColumn(name="filters_id"))
+    @JoinTable(
+            name = "Recept_filters",
+            joinColumns = @JoinColumn(name = "recept_id"),
+            inverseJoinColumns = @JoinColumn(name = "filter_id")  // Было filters_id, стало filter_id
+    )
+    @JsonBackReference
     private Set<Filters> filters;
 
 
      @ManyToMany
      @JoinTable(name = "menu_recepts", joinColumns = @JoinColumn(name="recept_id"), inverseJoinColumns = @JoinColumn(name="menu_id"))
+     @JsonBackReference
      private Set<Menu> menus;
 
 

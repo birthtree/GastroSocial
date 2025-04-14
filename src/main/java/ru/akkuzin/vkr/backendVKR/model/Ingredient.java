@@ -1,5 +1,6 @@
 package ru.akkuzin.vkr.backendVKR.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.Objects;
@@ -17,6 +18,7 @@ public class Ingredient {
     private String name;
 
     @ManyToMany(mappedBy = "ingredients")
+    @JsonBackReference
     private Set<Recept> recepts;
 
     public Ingredient() {

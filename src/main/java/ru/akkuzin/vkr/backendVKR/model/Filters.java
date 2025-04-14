@@ -1,5 +1,6 @@
 package ru.akkuzin.vkr.backendVKR.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.Set;
@@ -22,6 +23,7 @@ public class Filters {
     private String filterscol;
 
     @ManyToMany(mappedBy = "filters")
+    @JsonBackReference
     private Set<Recept> recepts;
 
     public Filters() {

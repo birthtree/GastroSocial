@@ -22,7 +22,8 @@ public class Menu {
     private Person owner;
 
 
-    @ManyToMany(mappedBy = "filters")
+    @ManyToMany(mappedBy = "menus")
+    @JsonBackReference
     private Set<Recept> recepts;
 
     public String getName() {
