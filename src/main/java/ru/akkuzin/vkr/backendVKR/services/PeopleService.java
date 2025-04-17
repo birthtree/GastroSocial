@@ -44,7 +44,7 @@ public class PeopleService {
         personFromDb.setPatronymic(updatedPerson.getPatronymic());
         personFromDb.setEmail(updatedPerson.getEmail());
         personFromDb.setPassword(updatedPerson.getPassword());
-        personFromDb.setAdmin(updatedPerson.isAdmin());
+        personFromDb.setRole(updatedPerson.getRole());
 
         peopleRepository.save(personFromDb);
     }

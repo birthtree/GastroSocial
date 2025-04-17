@@ -45,8 +45,8 @@ public class Person {
     @Column(name ="patronymic")
     private String patronymic;
 
-    @Column(name ="isadmin")
-    private boolean isAdmin;
+    @Column(name="role")
+    private String role;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)//Указываем что связь один ко многим с полем owner из класса Item
     @JsonBackReference
@@ -114,12 +114,12 @@ public class Person {
         this.patronymic = patronymic;
     }
 
-    public boolean isAdmin() {
-        return isAdmin;
+    public String getRole() {
+        return role;
     }
 
-    public void setAdmin(boolean admin) {
-        isAdmin = admin;
+    public void setRole(String role) {
+        this.role = role;
     }
 
     public @NotNull String getPassword() {

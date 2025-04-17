@@ -1,12 +1,19 @@
 package ru.akkuzin.vkr.backendVKR.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.akkuzin.vkr.backendVKR.dto.FilterDTO;
+import ru.akkuzin.vkr.backendVKR.dto.IngredientDTO;
+import ru.akkuzin.vkr.backendVKR.dto.OwnerDTO;
+import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
+import ru.akkuzin.vkr.backendVKR.model.Filters;
 import ru.akkuzin.vkr.backendVKR.model.Ingredient;
 import ru.akkuzin.vkr.backendVKR.model.Person;
 import ru.akkuzin.vkr.backendVKR.model.Recept;
+import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.ReceptRepository;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotFoundException;
 import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptNotFoundException;
@@ -24,10 +31,14 @@ import java.util.stream.Collectors;
 public class ReceptService {
     private final ReceptRepository receptRepository;
     private final IngredientService ingredientService;
+    private final FilterService filterService;
+    private final PeopleRepository personRepository;
     @Autowired
-    public ReceptService(ReceptRepository receptRepository, IngredientService ingredientService) {
+    public ReceptService(ReceptRepository receptRepository, IngredientService ingredientService, FilterService filterService, PeopleRepository personRepository) {
         this.receptRepository = receptRepository;
         this.ingredientService = ingredientService;
+        this.filterService = filterService;
+        this.personRepository = personRepository;
     }
 
     public List<Recept> findAll() {
@@ -42,40 +53,59 @@ public class ReceptService {
 
 
     @Transactional
-    public void save(Recept recept) {
+    public Recept save(Recept recept) {
+        // Обработка владельца по email
+        if (recept.getOwner().getEmail()!= null) {
+            Person owner = personRepository.findByEmail(recept.getOwner().getEmail())
+                    .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
+            recept.setOwner(owner);
+        }
+
+        // Обработка ингредиентов
         if (recept.getIngredientNames() != null) {
             Set<Ingredient> ingredients = recept.getIngredientNames().stream()
                     .map(name -> ingredientService.getOrCreateIngredientByName(name.trim()))
-                    .collect(Collectors.toSet()); // <-- важно: TO SET
-
+                    .collect(Collectors.toSet());
             recept.setIngredients(ingredients);
         }
 
-        receptRepository.save(recept);
-    }
-    @Transactional
-    public void update(int id, Recept updatedRecept) {
-        Recept receptFromDB = findById(id); // Используем существующий метод поиска
-
-        // Обновляем основные поля
-        receptFromDB.setName(updatedRecept.getName());
-        receptFromDB.setDiscription(updatedRecept.getDiscription());
-        receptFromDB.setDuration(updatedRecept.getDuration());
-        receptFromDB.setPrivate(updatedRecept.isPrivate());
-        receptFromDB.setOwner(updatedRecept.getOwner());
-
-        // Обработка ингредиентов (аналогично save)
-        if (updatedRecept.getIngredientNames() != null) {
-            Set<Ingredient> ingredients = updatedRecept.getIngredientNames().stream()
-                    .map(name -> ingredientService.getOrCreateIngredientByName(name.trim()))
+        if (recept.getFilterNames() != null) {
+            Set<Filters> filters = recept.getFilterNames().stream()
+                    .map(name -> filterService.getOrCreateFilterByName(name.trim()))
                     .collect(Collectors.toSet());
-
-            // Очищаем старые и устанавливаем новые ингредиенты
-            receptFromDB.getIngredients().clear();
-            receptFromDB.getIngredients().addAll(ingredients);
+            recept.setFilters(filters);
         }
 
-        receptRepository.save(receptFromDB);
+        return receptRepository.save(recept);
+    }
+
+    @Transactional
+    public Recept update(int id, Recept updatedRecept, List<String> ingredientNames, List<String> filterNames) {
+        Recept recept = findById(id);
+
+        // Обновляем основные поля
+        recept.setName(updatedRecept.getName());
+        recept.setDiscription(updatedRecept.getDiscription());
+        recept.setDuration(updatedRecept.getDuration());
+        recept.setPrivate(updatedRecept.isPrivate());
+
+        // Обновляем ингредиенты по названиям
+        if (ingredientNames != null) {
+            Set<Ingredient> ingredients = ingredientNames.stream()
+                    .map(name -> ingredientService.getOrCreateIngredientByName(name.trim()))
+                    .collect(Collectors.toSet());
+            recept.setIngredients(ingredients);
+        }
+
+        // Обновляем фильтры по названиям
+        if (filterNames != null) {
+            Set<Filters> filters = filterNames.stream()
+                    .map(name -> filterService.getOrCreateFilterByName(name.trim()))
+                    .collect(Collectors.toSet());
+            recept.setFilters(filters);
+        }
+
+        return receptRepository.save(recept);
     }
     @Transactional
     public void deleteById(int id) {
@@ -84,56 +114,98 @@ public class ReceptService {
         }
         receptRepository.deleteById(id);
     }
-    public List<Recept> findByNameContaining(String name) {
+    public List<Recept> findByNameContainingRaw(String name) {
         return receptRepository.findByNameContainingIgnoreCase(name);
     }
 
-    public List<Recept> findByIngredientNames(Set<String> ingredientNames) {
+    public List<Recept> findByIngredientNamesRaw(Set<String> ingredientNames) {
         return receptRepository.findByIngredientsNameIn(ingredientNames);
     }
 
-    public List<Recept> findByFilterNames(Set<String> filterNames) {
+    public List<Recept> findByFilterNamesRaw(Set<String> filterNames) {
         return receptRepository.findByFiltersNameOfFilterIn(filterNames);
     }
 
-    public List<Recept> combinedSearch(String name, Set<String> ingredientNames, Set<String> filterNames) {
+    public List<ReceptResponseDTO> combinedSearch(String name, Set<String> ingredientNames, Set<String> filterNames) {
+        List<Recept> recepts;
+
         if (name != null && ingredientNames != null && filterNames != null) {
-            return receptRepository.findByNameContainingIgnoreCaseAndIngredientsNameInAndFiltersNameOfFilterIn(
+            recepts = receptRepository.findByNameContainingIgnoreCaseAndIngredientsNameInAndFiltersNameOfFilterIn(
                     name, ingredientNames, filterNames);
         } else if (name != null && ingredientNames != null) {
-            return receptRepository.findByNameContainingIgnoreCaseAndIngredientsNameIn(name, ingredientNames);
+            recepts = receptRepository.findByNameContainingIgnoreCaseAndIngredientsNameIn(name, ingredientNames);
         } else if (name != null && filterNames != null) {
-            return receptRepository.findByNameContainingIgnoreCaseAndFiltersNameOfFilterIn(name, filterNames);
+            recepts = receptRepository.findByNameContainingIgnoreCaseAndFiltersNameOfFilterIn(name, filterNames);
         } else if (ingredientNames != null && filterNames != null) {
-            return receptRepository.findByIngredientsNameInAndFiltersNameOfFilterIn(ingredientNames, filterNames);
+            recepts = receptRepository.findByIngredientsNameInAndFiltersNameOfFilterIn(ingredientNames, filterNames);
         } else if (name != null) {
-            return findByNameContaining(name);
+            recepts = findByNameContainingRaw(name); // Используем Raw-версию
         } else if (ingredientNames != null) {
-            return findByIngredientNames(ingredientNames);
+            recepts = findByIngredientNamesRaw(ingredientNames); // Используем Raw-версию
         } else if (filterNames != null) {
-            return findByFilterNames(filterNames);
+            recepts = findByFilterNamesRaw(filterNames); // Используем Raw-версию
         } else {
-            return receptRepository.findAll();
+            recepts = receptRepository.findAll();
         }
+
+        // Преобразуем в DTO только в конце
+        return recepts.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
     }
-    public List<Recept> findByDuration(String maxDuration, String minDuration) {
+
+
+
+    public List<ReceptResponseDTO> findByNameContaining(String name) {
+        return findByNameContainingRaw(name).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<ReceptResponseDTO> findByIngredientNames(Set<String> ingredientNames) {
+        return findByIngredientNamesRaw(ingredientNames).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<ReceptResponseDTO> findByFilterNames(Set<String> filterNames) {
+        return findByFilterNamesRaw(filterNames).stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+
+
+
+
+
+    public List<ReceptResponseDTO> findByDuration(String maxDuration, String minDuration) {
+        List<Recept> recepts;
+
         if (maxDuration != null && minDuration != null) {
-            return receptRepository.findByDurationBetween(
+            recepts = receptRepository.findByDurationBetween(
                     Time.valueOf(minDuration + ":00"),
                     Time.valueOf(maxDuration + ":00"));
         } else if (maxDuration != null) {
-            return receptRepository.findByDurationLessThanEqual(
+            recepts = receptRepository.findByDurationLessThanEqual(
                     Time.valueOf(maxDuration + ":00"));
         } else if (minDuration != null) {
-            return receptRepository.findByDurationGreaterThanEqual(
+            recepts = receptRepository.findByDurationGreaterThanEqual(
                     Time.valueOf(minDuration + ":00"));
+        } else {
+            recepts = Collections.emptyList();
         }
-        return Collections.emptyList();
+
+        return recepts.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
     }
 
-    public List<Recept> advancedSearch(String name, Set<String> ingredientNames,
-                                       Set<String> filterNames, String maxDuration,
-                                       String minDuration) {
+    public List<ReceptResponseDTO> advancedSearch(String name,
+                                                  Set<String> ingredientNames,
+                                                  Set<String> filterNames,
+                                                  String maxDuration,
+                                                  String minDuration) {
         Specification<Recept> spec = Specification.where(null);
 
         if (name != null) {
@@ -154,7 +226,52 @@ public class ReceptService {
                     Time.valueOf(minDuration + ":00")));
         }
 
-        return receptRepository.findAll(spec);
+        List<Recept> recepts = receptRepository.findAll(spec);
+
+        return recepts.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+
+
+
+    private ReceptResponseDTO convertToResponseDTO(Recept recept) {
+        ReceptResponseDTO dto = new ReceptResponseDTO();
+        dto.setId(recept.getId());
+        dto.setName(recept.getName());
+        dto.setDescription(recept.getDiscription());
+        dto.setDuration(recept.getDuration());
+        dto.setPrivate(recept.isPrivate());
+
+        // Преобразование владельца
+        if (recept.getOwner() != null) {
+            OwnerDTO ownerDto = new OwnerDTO();
+            ownerDto.setId(recept.getOwner().getId());
+            ownerDto.setEmail(recept.getOwner().getEmail());
+            ownerDto.setName(recept.getOwner().getName());
+            ownerDto.setSecondName(recept.getOwner().getSecondName());
+            ownerDto.setPatronymic(recept.getOwner().getPatronymic());
+            dto.setOwner(ownerDto);
+        }
+
+        // Преобразование ингредиентов
+        if (recept.getIngredients() != null) {
+            List<IngredientDTO> ingredients = recept.getIngredients().stream()
+                    .map(ing -> new IngredientDTO(ing.getId(), ing.getName()))
+                    .collect(Collectors.toList());
+            dto.setIngredients(ingredients);
+        }
+
+        // Преобразование фильтров
+        if (recept.getFilters() != null) {
+            List<FilterDTO> filters = recept.getFilters().stream()
+                    .map(f -> new FilterDTO(f.getId(), f.getNameOfFilter(), f.getTypeOfFilter()))
+                    .collect(Collectors.toList());
+            dto.setFilters(filters);
+        }
+
+        return dto;
     }
 
 }

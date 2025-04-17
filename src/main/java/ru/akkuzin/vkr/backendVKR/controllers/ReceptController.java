@@ -7,14 +7,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import ru.akkuzin.vkr.backendVKR.dto.ReceptCreateDTO;
+import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
 import ru.akkuzin.vkr.backendVKR.model.Person;
 import ru.akkuzin.vkr.backendVKR.model.Recept;
 import ru.akkuzin.vkr.backendVKR.services.PeopleService;
 import ru.akkuzin.vkr.backendVKR.services.ReceptService;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotCreatedException;
 import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptNotCreatedException;
+import ru.akkuzin.vkr.backendVKR.util.ReceptMapper;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/recepts")
@@ -29,66 +33,88 @@ public class ReceptController {
     }
 
     @GetMapping("/all")
-    public List<Recept> getPeople() {
-        return receptService.findAll();
+    public List<ReceptResponseDTO> getAllRecepts() {
+        return receptService.findAll().stream()
+                .map(ReceptMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}")
-    public Recept getRecept(@PathVariable int id) {
-        return receptService.findById(id);
+    public ReceptResponseDTO getRecept(@PathVariable int id) {
+        return ReceptMapper.toResponseDTO(receptService.findById(id));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<HttpStatus> deleteRecept(@PathVariable int id) {
         receptService.deleteById(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<HttpStatus> update(@PathVariable("id") int id,
-                                             @RequestBody @Valid Recept updatedRecept,
-                                             BindingResult bindingResult) {
+    public ResponseEntity<ReceptResponseDTO> update(
+            @PathVariable int id,
+            @RequestBody @Valid ReceptCreateDTO receptDTO,
+            BindingResult bindingResult) {
+
         if (bindingResult.hasErrors()) {
             throw new ReceptNotCreatedException(getErrorMessage(bindingResult));
         }
 
-        // Обработка владельца
-        if (updatedRecept.getOwner() != null && updatedRecept.getOwner().getEmail() != null) {
-            Person owner = peopleService.findByEmail(updatedRecept.getOwner().getEmail());
-            updatedRecept.setOwner(owner);
-        }
+        // Создаем объект Recept из DTO (без ингредиентов и фильтров)
+        Recept recept = new Recept();
+        recept.setName(receptDTO.getName());
+        recept.setDiscription(receptDTO.getDescription());
+        recept.setDuration(receptDTO.getDuration());
+        recept.setPrivate(receptDTO.getIsPrivate());
 
-        receptService.update(id, updatedRecept);
-        return ResponseEntity.ok(HttpStatus.OK);
-    }
-    @PostMapping
-    public ResponseEntity<HttpStatus> create(@RequestBody @Valid Recept recept,
-                                             BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            throw new ReceptNotCreatedException(getErrorMessage(bindingResult));
-        }
-
-        // Получаем email из объекта owner
-        if (recept.getOwner() == null || recept.getOwner().getEmail() == null) {
-            throw new PersonNotCreatedException("Owner email must be specified");
-        }
-
-        Person owner = peopleService.findByEmail(recept.getOwner().getEmail());
-
-
+        // Устанавливаем владельца
+        Person owner = peopleService.findByEmail(receptDTO.getOwnerEmail());
         recept.setOwner(owner);
-        receptService.save(recept);
-        return ResponseEntity.ok(HttpStatus.OK);
+
+        // Вызываем service с передачей списков названий
+        Recept updatedRecept = receptService.update(
+                id,
+                recept,
+                receptDTO.getIngredientNames(),  // List<String>
+                receptDTO.getFilterNames()       // List<String>
+        );
+
+        return ResponseEntity.ok(ReceptMapper.toResponseDTO(updatedRecept));
+    }
+
+    @PostMapping
+    public ResponseEntity<ReceptResponseDTO> create(
+            @RequestBody @Valid ReceptCreateDTO receptDTO,
+            BindingResult bindingResult) {
+
+        if (bindingResult.hasErrors()) {
+            throw new ReceptNotCreatedException(getErrorMessage(bindingResult));
+        }
+
+        // Создаем объект Recept из DTO
+        Recept recept = new Recept();
+        recept.setName(receptDTO.getName());
+        recept.setDiscription(receptDTO.getDescription());
+        recept.setDuration(receptDTO.getDuration());
+        recept.setPrivate(receptDTO.getIsPrivate());
+        recept.setIngredientNames(receptDTO.getIngredientNames());
+        recept.setFilterNames(receptDTO.getFilterNames());
+
+        // Устанавливаем владельца
+        Person owner = peopleService.findByEmail(receptDTO.getOwnerEmail());
+        recept.setOwner(owner);
+
+        // Сохраняем и получаем сохраненную сущность
+        Recept savedRecept = receptService.save(recept);
+
+        // Преобразуем в DTO и возвращаем
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ReceptMapper.toResponseDTO(savedRecept));
     }
 
     private String getErrorMessage(BindingResult bindingResult) {
-        StringBuilder errorMsg = new StringBuilder();
-        List<FieldError> errors = bindingResult.getFieldErrors();
-        for (FieldError error : errors) {
-            errorMsg.append(error.getField())
-                    .append(" - ").append(error.getDefaultMessage())
-                    .append("; ");
-        }
-        return errorMsg.toString();
+        return bindingResult.getFieldErrors().stream()
+                .map(error -> error.getField() + " - " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
     }
 }

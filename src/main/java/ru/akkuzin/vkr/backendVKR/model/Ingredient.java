@@ -14,6 +14,11 @@ public class Ingredient {
     @Column(name = "id")
     private int id;
 
+    public Ingredient(int id, String name) {
+        this.id = id;
+        this.name = name;
+    }
+
     @Column(name="name")
     private String name;
 

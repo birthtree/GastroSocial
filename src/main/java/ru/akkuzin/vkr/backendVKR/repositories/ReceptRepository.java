@@ -1,5 +1,6 @@
 package ru.akkuzin.vkr.backendVKR.repositories;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -13,14 +14,19 @@ import java.util.Set;
 
 @Repository
 public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpecificationExecutor<Recept> {
+
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     List<Recept> findByNameContainingIgnoreCase(String name);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r JOIN r.ingredients i WHERE i.name IN :ingredientNames")
     List<Recept> findByIngredientsNameIn(@Param("ingredientNames") Set<String> ingredientNames);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r JOIN r.filters f WHERE f.nameOfFilter IN :filterNames")
     List<Recept> findByFiltersNameOfFilterIn(@Param("filterNames") Set<String> filterNames);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r " +
             "WHERE LOWER(r.name) LIKE LOWER(CONCAT('%', :name, '%')) " +
             "AND EXISTS (SELECT 1 FROM r.ingredients i WHERE i.name IN :ingredientNames) " +
@@ -30,6 +36,7 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
             @Param("ingredientNames") Set<String> ingredientNames,
             @Param("filterNames") Set<String> filterNames);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r " +
             "WHERE LOWER(r.name) LIKE LOWER(CONCAT('%', :name, '%')) " +
             "AND EXISTS (SELECT 1 FROM r.ingredients i WHERE i.name IN :ingredientNames)")
@@ -37,6 +44,7 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
             @Param("name") String name,
             @Param("ingredientNames") Set<String> ingredientNames);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r " +
             "WHERE LOWER(r.name) LIKE LOWER(CONCAT('%', :name, '%')) " +
             "AND EXISTS (SELECT 1 FROM r.filters f WHERE f.nameOfFilter IN :filterNames)")
@@ -44,6 +52,7 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
             @Param("name") String name,
             @Param("filterNames") Set<String> filterNames);
 
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     @Query("SELECT DISTINCT r FROM Recept r " +
             "WHERE EXISTS (SELECT 1 FROM r.ingredients i WHERE i.name IN :ingredientNames) " +
             "AND EXISTS (SELECT 1 FROM r.filters f WHERE f.nameOfFilter IN :filterNames)")
@@ -51,9 +60,16 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
             @Param("ingredientNames") Set<String> ingredientNames,
             @Param("filterNames") Set<String> filterNames);
 
-    List<Recept> findByDurationBetween(Time time, Time time1);
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
+    List<Recept> findByDurationBetween(Time min, Time max);
 
-    List<Recept> findByDurationLessThanEqual(Time time);
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
+    List<Recept> findByDurationLessThanEqual(Time max);
 
-    List<Recept> findByDurationGreaterThanEqual(Time time);
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
+    List<Recept> findByDurationGreaterThanEqual(Time min);
+
+    @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
+    @Override
+    List<Recept> findAll();
 }

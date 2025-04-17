@@ -40,6 +40,16 @@ public class Recept {
     @Transient
     private List<String> ingredientNames;
 
+    @Transient
+    private List<String> filterNames;
+
+    public List<String> getFilterNames() {
+        return filterNames;
+    }
+
+    public void setFilterNames(List<String> filterNames) {
+        this.filterNames = filterNames;
+    }
 
     public List<String> getIngredientNames() {
         return ingredientNames;
@@ -55,15 +65,15 @@ public class Recept {
             joinColumns = @JoinColumn(name = "recept_id"),
             inverseJoinColumns = @JoinColumn(name = "ingredient_id")
     )
+    @JsonBackReference
     private Set<Ingredient> ingredients;
 
     @ManyToMany
     @JoinTable(
             name = "Recept_filters",
             joinColumns = @JoinColumn(name = "recept_id"),
-            inverseJoinColumns = @JoinColumn(name = "filter_id")  // Было filters_id, стало filter_id
+            inverseJoinColumns = @JoinColumn(name = "filter_id")
     )
-    @JsonBackReference
     private Set<Filters> filters;
 
 

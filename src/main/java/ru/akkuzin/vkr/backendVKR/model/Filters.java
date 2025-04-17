@@ -19,8 +19,7 @@ public class Filters {
     @Column(name = "name_of_filter")
     private String nameOfFilter;
 
-    @Column(name = "filterscol")
-    private String filterscol;
+
 
     @ManyToMany(mappedBy = "filters")
     @JsonBackReference
@@ -59,13 +58,7 @@ public class Filters {
         this.nameOfFilter = nameOfFilter;
     }
 
-    public String getFilterscol() {
-        return filterscol;
-    }
 
-    public void setFilterscol(String filterscol) {
-        this.filterscol = filterscol;
-    }
 
     public Set<Recept> getRecepts() {
         return recepts;
