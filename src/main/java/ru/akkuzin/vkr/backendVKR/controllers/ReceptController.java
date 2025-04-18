@@ -97,6 +97,8 @@ public class ReceptController {
         recept.setDiscription(receptDTO.getDescription());
         recept.setDuration(receptDTO.getDuration());
         recept.setPrivate(receptDTO.getIsPrivate());
+        recept.setImageUrl(receptDTO.getImageUrl());
+        recept.setCookingSteps(receptDTO.getCookingSteps());
         recept.setIngredientNames(receptDTO.getIngredientNames());
         recept.setFilterNames(receptDTO.getFilterNames());
 

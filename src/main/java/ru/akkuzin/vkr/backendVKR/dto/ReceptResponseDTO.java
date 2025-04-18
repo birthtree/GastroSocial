@@ -17,7 +17,25 @@ public class ReceptResponseDTO {
     private List<String> ingredientNames;
     private List<IngredientDTO> ingredients;
     private List<FilterDTO> filters;
+    private String imageUrl;
+    private List<String> cookingSteps;
 
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public List<String> getCookingSteps() {
+        return cookingSteps;
+    }
+
+    public void setCookingSteps(List<String> cookingSteps) {
+        this.cookingSteps = cookingSteps;
+    }
 
     public ReceptResponseDTO convertToResponseDTO(Recept recept) {
         ReceptResponseDTO dto = new ReceptResponseDTO();

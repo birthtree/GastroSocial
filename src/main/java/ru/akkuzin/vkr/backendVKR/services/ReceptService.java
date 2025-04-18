@@ -1,5 +1,7 @@
 package ru.akkuzin.vkr.backendVKR.services;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
@@ -243,7 +245,22 @@ public class ReceptService {
         dto.setDescription(recept.getDiscription());
         dto.setDuration(recept.getDuration());
         dto.setPrivate(recept.isPrivate());
+        dto.setImageUrl(recept.getImageUrl());
+        if (recept.getCookingStepsJson() != null && !recept.getCookingStepsJson().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                List<String> steps = mapper.readValue(
+                        recept.getCookingStepsJson(),
+                        new TypeReference<List<String>>(){}
+                );
+                dto.setCookingSteps(steps);
+            } catch (Exception e) {
 
+                dto.setCookingSteps(Collections.emptyList());
+            }
+        } else {
+            dto.setCookingSteps(Collections.emptyList());
+        }
         // Преобразование владельца
         if (recept.getOwner() != null) {
             OwnerDTO ownerDto = new OwnerDTO();

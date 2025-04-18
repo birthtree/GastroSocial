@@ -15,6 +15,24 @@ public class ReceptDTO {
     private Set<Integer> ingredientIds; // Только ID ингредиентов
     private Set<Integer> filterIds; // Только ID фильтров
     private List<String> ingredientNames; // Транзиентное поле из сущности
+    private String imageUrl;
+    private List<String> cookingSteps;
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public List<String> getCookingSteps() {
+        return cookingSteps;
+    }
+
+    public void setCookingSteps(List<String> cookingSteps) {
+        this.cookingSteps = cookingSteps;
+    }
 
     // Конструкторы
     public ReceptDTO() {

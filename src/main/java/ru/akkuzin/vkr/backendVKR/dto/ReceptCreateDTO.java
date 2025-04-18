@@ -12,6 +12,10 @@ public class ReceptCreateDTO {
     @NotBlank(message = "Описание не может быть пустым")
     private String description;
 
+
+    private String imageUrl;
+    private List<String> cookingSteps;
+
     @NotNull(message = "Длительность не может быть пустой")
     private Time duration;
 
@@ -38,6 +42,22 @@ public class ReceptCreateDTO {
 
     public List<String> getFilterNames() {
         return filterNames;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public List<String> getCookingSteps() {
+        return cookingSteps;
+    }
+
+    public void setCookingSteps(List<String> cookingSteps) {
+        this.cookingSteps = cookingSteps;
     }
 
     public void setFilterNames(List<String> filterNames) {

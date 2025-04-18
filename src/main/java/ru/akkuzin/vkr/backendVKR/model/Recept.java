@@ -1,10 +1,13 @@
 package ru.akkuzin.vkr.backendVKR.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.sql.Time;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +45,55 @@ public class Recept {
 
     @Transient
     private List<String> filterNames;
+
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "cooking_steps", columnDefinition = "TEXT")
+    private String cookingStepsJson;
+
+    @Transient
+    private List<String> cookingSteps;
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getCookingStepsJson() {
+        return cookingStepsJson;
+    }
+
+    public void setCookingStepsJson(String cookingStepsJson) {
+        this.cookingStepsJson = cookingStepsJson;
+    }
+
+    public List<String> getCookingSteps() {
+        if (cookingSteps == null && cookingStepsJson != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                cookingSteps = mapper.readValue(cookingStepsJson,
+                        new TypeReference<List<String>>(){});
+            } catch (Exception e) {
+                cookingSteps = Collections.emptyList();
+            }
+        }
+        return cookingSteps;
+    }
+
+    public void setCookingSteps(List<String> cookingSteps) {
+        this.cookingSteps = cookingSteps;
+        try {
+            this.cookingStepsJson = new ObjectMapper().writeValueAsString(cookingSteps);
+        } catch (Exception e) {
+            this.cookingStepsJson = "[]";
+        }
+    }
+
 
     public List<String> getFilterNames() {
         return filterNames;

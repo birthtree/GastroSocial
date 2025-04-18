@@ -16,7 +16,8 @@ public class ReceptMapper {
         dto.setDescription(recept.getDiscription());
         dto.setDuration(recept.getDuration());
         dto.setPrivate(recept.isPrivate());
-
+        dto.setCookingSteps(recept.getCookingSteps());
+        dto.setImageUrl(recept.getImageUrl());
         // Маппинг владельца
         if (recept.getOwner() != null) {
             OwnerDTO ownerDTO = new OwnerDTO();
