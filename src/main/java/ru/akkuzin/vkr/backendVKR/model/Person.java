@@ -52,8 +52,18 @@ public class Person {
     @JsonBackReference
     private List<Recept> recepts;//Т.к. у человека может быть не один предмет а много создаём список, чтобы хранить в нём все предметы человека
 
+    @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Mealplan> mealPlans;
 
-      @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)//Указываем что связь один ко многим с полем owner из класса Item
+    public List<Mealplan> getMealPlans() {
+        return mealPlans;
+    }
+
+    public void setMealPlans(List<Mealplan> mealPlans) {
+        this.mealPlans = mealPlans;
+    }
+
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)//Указываем что связь один ко многим с полем owner из класса Item
       @JsonBackReference
      private List<Menu> menus;//Т.к. у человека может быть не один предмет а много создаём список, чтобы хранить в нём все предметы человека
 

@@ -27,6 +27,17 @@ public class Recept {
     @NotNull
     private String discription;
 
+    @OneToMany(mappedBy = "recept", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Mealplan> mealPlans;
+
+    public List<Mealplan> getMealPlans() {
+        return mealPlans;
+    }
+
+    public void setMealPlans(List<Mealplan> mealPlans) {
+        this.mealPlans = mealPlans;
+    }
+
     @Column(name = "duration")
     @NotNull
     private Time duration;
