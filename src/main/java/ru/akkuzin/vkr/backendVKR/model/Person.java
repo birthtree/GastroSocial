@@ -8,7 +8,9 @@ import jakarta.validation.constraints.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name="Person")
@@ -18,6 +20,23 @@ public class Person {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @JsonIgnore
     private int id;
+
+
+    @ManyToMany
+    @JoinTable(
+            name = "Person_favorites_recepts",
+            joinColumns = @JoinColumn(name = "person_id"),
+            inverseJoinColumns = @JoinColumn(name = "recept_id")
+    )
+    private Set<Recept> favoriteRecepts = new HashSet<>();
+
+    public Set<Recept> getFavoriteRecepts() {
+        return favoriteRecepts;
+    }
+
+    public void setFavoriteRecepts(Set<Recept> favoriteRecepts) {
+        this.favoriteRecepts = favoriteRecepts;
+    }
 
     @Column(name ="email")
     @NotNull

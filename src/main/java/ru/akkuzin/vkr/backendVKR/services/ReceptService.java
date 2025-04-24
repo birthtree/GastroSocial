@@ -346,4 +346,45 @@ public class ReceptService {
         return dto;
     }
 
+    @Transactional
+    public void addToFavorites(String userEmail, int receptId) {
+        Person person = personRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Recept recept = receptRepository.findById(receptId)
+                .orElseThrow(() -> new EntityNotFoundException("Recept not found"));
+
+        if (recept.isPrivate() && !recept.getOwner().getEmail().equals(userEmail)) {
+            throw new SecurityException("Cannot add private recept to favorites");
+        }
+
+        person.getFavoriteRecepts().add(recept);
+        personRepository.save(person);
+    }
+
+    @Transactional
+    public void removeFromFavorites(String userEmail, int receptId) {
+        Person person = personRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        person.getFavoriteRecepts().removeIf(r -> r.getId() == receptId);
+        personRepository.save(person);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Recept> getUserFavorites(String userEmail) {
+        return personRepository.findByEmail(userEmail)
+                .map(p -> new ArrayList<>(p.getFavoriteRecepts()))
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isFavorite(String userEmail, int receptId) {
+        return personRepository.findByEmail(userEmail)
+                .map(p -> p.getFavoriteRecepts().stream()
+                        .anyMatch(r -> r.getId() == receptId))
+                .orElse(false);
+    }
+
+
 }
