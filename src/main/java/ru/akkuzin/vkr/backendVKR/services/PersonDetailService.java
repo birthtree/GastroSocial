@@ -1,6 +1,7 @@
 package ru.akkuzin.vkr.backendVKR.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,7 +27,9 @@ public class PersonDetailService implements UserDetailsService {
         if (person == null) {
             throw new UsernameNotFoundException("Пользователь с email " + email + " не найден");
         }
-
+        if (!person.isActive()) {
+            throw new DisabledException("User is blocked");
+        }
         // Возвращаем UserDetails (реализацию PersonDetails)
         return new PersonDetails(person);
     }

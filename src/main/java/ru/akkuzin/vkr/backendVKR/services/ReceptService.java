@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.akkuzin.vkr.backendVKR.dto.*;
 import ru.akkuzin.vkr.backendVKR.model.*;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
+import ru.akkuzin.vkr.backendVKR.repositories.ReceptIngredientRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.ReceptRepository;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotFoundException;
 import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptNotFoundException;
@@ -26,12 +28,16 @@ public class ReceptService {
     private final IngredientService ingredientService;
     private final FilterService filterService;
     private final PeopleRepository personRepository;
+    private final PeopleService peopleService;
+    private final ReceptIngredientRepository receptIngredientRepository;
     @Autowired
-    public ReceptService(ReceptRepository receptRepository, IngredientService ingredientService, FilterService filterService, PeopleRepository personRepository) {
+    public ReceptService(ReceptRepository receptRepository, IngredientService ingredientService, FilterService filterService, PeopleRepository personRepository, PeopleService peopleService, ReceptIngredientRepository receptIngredientRepository) {
         this.receptRepository = receptRepository;
         this.ingredientService = ingredientService;
         this.filterService = filterService;
         this.personRepository = personRepository;
+        this.peopleService = peopleService;
+        this.receptIngredientRepository = receptIngredientRepository;
     }
 
     public List<Recept> findAll() {
@@ -88,13 +94,14 @@ public class ReceptService {
 
     @Transactional
     public Recept save(Recept recept) {
+
         // Обработка владельца по email
         if (recept.getOwner().getEmail()!= null) {
             Person owner = personRepository.findByEmail(recept.getOwner().getEmail())
                     .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
             recept.setOwner(owner);
         }
-
+        peopleService.checkIfUserActive(recept.getOwner().getEmail());
         // Обработка ингредиентов
         // Обработка ингредиентов с quantity
         if (recept.getIngredientNames() != null && recept.getIngredientQuantities() != null) {
@@ -126,7 +133,7 @@ public class ReceptService {
     @Transactional
     public Recept update(int id, Recept updatedRecept, List<String> ingredientNames, List<String> filterNames) {
         Recept recept = findById(id);
-
+        peopleService.checkIfUserActive(recept.getOwner().getEmail());
         // Обновляем основные поля
         recept.setName(updatedRecept.getName());
         recept.setDiscription(updatedRecept.getDiscription());
@@ -151,13 +158,80 @@ public class ReceptService {
 
         return receptRepository.save(recept);
     }
+
+
     @Transactional
-    public void deleteById(int id) {
-        if (!receptRepository.existsById(id)) {
-            throw new ReceptNotFoundException();
+    public void deleteById(int id, String currentUserEmail) {
+        // 1. Получаем рецепт без инициализации коллекций
+        Recept recept = receptRepository.findById(id)
+                .orElseThrow(() -> new ReceptNotFoundException());
+
+        // 2. Получаем текущего пользователя
+        Person currentUser = personRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // 3. Проверяем права
+        validateDeletePermissions(recept, currentUser);
+
+        // 4. Удаляем связи в правильном порядке
+        try {
+            // Сначала удаляем из избранного
+            removeFromFavorites(recept.getId()); // Передаем только ID
+
+            // Затем удаляем связи с ингредиентами
+            receptIngredientRepository.deleteByReceptId(recept.getId());
+
+            // Очищаем связи с фильтрами (если нужно)
+            if (recept.getFilters() != null) {
+                recept.getFilters().clear();
+            }
+
+            // И только потом удаляем сам рецепт
+            receptRepository.delete(recept);
+        } catch (Exception e) {
+            throw new RuntimeException("Error deleting recipe", e);
         }
-        receptRepository.deleteById(id);
     }
+
+    private void validateDeletePermissions(Recept recept, Person currentUser) {
+        // Проверяем, активен ли пользователь
+        if (!currentUser.isActive()) {
+            throw new DisabledException("User is blocked");
+        }
+
+        // Администратор может удалять любые рецепты
+        if (currentUser.getRole().equals("ROLE_ADMIN")) {
+            return;
+        }
+
+        // Обычный пользователь может удалять только свои рецепты
+        if (!recept.getOwner().getEmail().equals(currentUser.getEmail())) {
+            throw new SecurityException("You can only delete your own recipes");
+        }
+    }
+
+
+    private void removeFromFavorites(int receptId) {
+        List<Person> users = personRepository.findUsersWithFavoriteRecipe(receptId);
+        if (users != null && !users.isEmpty()) {
+            users.forEach(user -> {
+                user.getFavoriteRecepts().removeIf(r -> r.getId() == receptId);
+            });
+            personRepository.saveAll(users);
+        }
+    }
+
+    private void deleteReceptIngredients(Recept recept) {
+        // Явное удаление через репозиторий
+        receptIngredientRepository.deleteAll(recept.getReceptIngredients());
+        recept.getReceptIngredients().clear();
+    }
+
+    private void deleteReceptFilters(Recept recept) {
+        // Для ManyToMany просто очищаем коллекцию
+        recept.getFilters().clear();
+    }
+
     public List<Recept> findByNameContainingRaw(String name) {
         return receptRepository.findByNameContainingIgnoreCase(name);
     }
@@ -364,6 +438,7 @@ public class ReceptService {
 
     @Transactional
     public void removeFromFavorites(String userEmail, int receptId) {
+
         Person person = personRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 

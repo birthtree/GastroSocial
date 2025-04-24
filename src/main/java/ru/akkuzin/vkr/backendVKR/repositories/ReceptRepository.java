@@ -10,10 +10,15 @@ import org.springframework.data.repository.query.Param;
 
 import java.sql.Time;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpecificationExecutor<Recept> {
+
+    @EntityGraph(attributePaths = {"receptIngredients", "filters", "owner"})
+    Optional<Recept> findFullById(Integer id);
+
 
     @EntityGraph(attributePaths = {"ingredients", "filters", "owner"})
     List<Recept> findByNameContainingIgnoreCase(String name);

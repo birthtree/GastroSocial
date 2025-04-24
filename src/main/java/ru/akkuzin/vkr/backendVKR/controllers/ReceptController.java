@@ -1,9 +1,11 @@
 package ru.akkuzin.vkr.backendVKR.controllers;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -44,11 +46,20 @@ public class ReceptController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<HttpStatus> deleteRecept(@PathVariable int id) {
-        receptService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteRecept(
+            @PathVariable int id,
+            @RequestHeader("User-Email") String userEmail) {
+        try {
+            receptService.deleteById(id, userEmail);
+            return ResponseEntity.noContent().build();
+        } catch (DisabledException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
-
     @PutMapping("/{id}")
     public ResponseEntity<ReceptResponseDTO> update(
             @PathVariable int id,
