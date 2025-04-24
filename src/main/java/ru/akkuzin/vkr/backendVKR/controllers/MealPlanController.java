@@ -22,7 +22,8 @@ public class MealPlanController {
 
     @PostMapping("/plan")
     public ResponseEntity<?> addToMealPlan(@RequestBody MealPlanDTO mealPlanDTO) {
-        mealPlanService.addToMealPlan(mealPlanDTO);
+        //mealPlanService.addToMealPlan(mealPlanDTO);
+        mealPlanService.saveOrUpdateMealPlan(mealPlanDTO);
         return ResponseEntity.ok("Рецепт добавлен в план меню");
     }
 

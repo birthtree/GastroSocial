@@ -7,14 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.akkuzin.vkr.backendVKR.dto.FilterDTO;
-import ru.akkuzin.vkr.backendVKR.dto.IngredientDTO;
-import ru.akkuzin.vkr.backendVKR.dto.OwnerDTO;
-import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
-import ru.akkuzin.vkr.backendVKR.model.Filters;
-import ru.akkuzin.vkr.backendVKR.model.Ingredient;
-import ru.akkuzin.vkr.backendVKR.model.Person;
-import ru.akkuzin.vkr.backendVKR.model.Recept;
+import ru.akkuzin.vkr.backendVKR.dto.*;
+import ru.akkuzin.vkr.backendVKR.model.*;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.ReceptRepository;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotFoundException;
@@ -22,10 +16,7 @@ import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptNotFoundException;
 import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptSpecifications;
 
 import java.sql.Time;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,7 +43,48 @@ public class ReceptService {
         return recept.orElseThrow(ReceptNotFoundException::new);
     }
 
+    @Transactional
+    public Recept update(int id, Recept updatedRecept) {
+        Recept recept = findById(id);
 
+        // Обновляем основные поля
+        recept.setName(updatedRecept.getName());
+        recept.setDiscription(updatedRecept.getDiscription());
+        recept.setDuration(updatedRecept.getDuration());
+        recept.setPrivate(updatedRecept.isPrivate());
+        recept.setImageUrl(updatedRecept.getImageUrl());
+        recept.setCookingSteps(updatedRecept.getCookingSteps());
+
+        // Обработка ингредиентов с количествами
+        if (updatedRecept.getIngredientNames() != null &&
+                updatedRecept.getIngredientQuantities() != null) {
+
+            // Удаляем старые связи
+            recept.getReceptIngredients().clear();
+
+            // Создаем новые связи с количествами
+            for (int i = 0; i < updatedRecept.getIngredientNames().size(); i++) {
+                Ingredient ingredient = ingredientService.getOrCreateIngredientByName(
+                        updatedRecept.getIngredientNames().get(i).trim());
+
+                ReceptIngredient ri = new ReceptIngredient();
+                ri.setRecept(recept);
+                ri.setIngredient(ingredient);
+                ri.setQuantity(updatedRecept.getIngredientQuantities().get(i));
+                recept.getReceptIngredients().add(ri);
+            }
+        }
+
+        // Обработка фильтров
+        if (updatedRecept.getFilterNames() != null) {
+            Set<Filters> filters = updatedRecept.getFilterNames().stream()
+                    .map(name -> filterService.getOrCreateFilterByName(name.trim()))
+                    .collect(Collectors.toSet());
+            recept.setFilters(filters);
+        }
+
+        return receptRepository.save(recept);
+    }
 
     @Transactional
     public Recept save(Recept recept) {
@@ -64,11 +96,21 @@ public class ReceptService {
         }
 
         // Обработка ингредиентов
-        if (recept.getIngredientNames() != null) {
-            Set<Ingredient> ingredients = recept.getIngredientNames().stream()
-                    .map(name -> ingredientService.getOrCreateIngredientByName(name.trim()))
-                    .collect(Collectors.toSet());
-            recept.setIngredients(ingredients);
+        // Обработка ингредиентов с quantity
+        if (recept.getIngredientNames() != null && recept.getIngredientQuantities() != null) {
+            // Предполагаем, что recept теперь имеет List<ReceptIngredientDTO> или Map<Ingredient, String>
+            Set<ReceptIngredient> receptIngredients = new HashSet<>();
+            for (int i = 0; i < recept.getIngredientNames().size(); i++) {
+                Ingredient ingredient = ingredientService.getOrCreateIngredientByName(
+                        recept.getIngredientNames().get(i).trim());
+
+                ReceptIngredient ri = new ReceptIngredient();
+                ri.setRecept(recept);
+                ri.setIngredient(ingredient);
+                ri.setQuantity(recept.getIngredientQuantities().get(i));
+                receptIngredients.add(ri);
+            }
+            recept.setReceptIngredients(receptIngredients);
         }
 
         if (recept.getFilterNames() != null) {
@@ -273,9 +315,22 @@ public class ReceptService {
         }
 
         // Преобразование ингредиентов
-        if (recept.getIngredients() != null) {
-            List<IngredientDTO> ingredients = recept.getIngredients().stream()
-                    .map(ing -> new IngredientDTO(ing.getId(), ing.getName()))
+        if (recept.getReceptIngredients() != null) {
+            List<ReceptIngredientDTO> ingredients = recept.getReceptIngredients().stream()
+                    .map(ri -> new ReceptIngredientDTO(
+                            ri.getIngredient().getId(),
+                            ri.getIngredient().getName(),
+                            ri.getQuantity() // Добавляем количество
+                    ))
+                    .collect(Collectors.toList());
+            dto.setIngredients(ingredients);
+        } else if (recept.getIngredients() != null) { // Для обратной совместимости
+            List<ReceptIngredientDTO> ingredients = recept.getIngredients().stream()
+                    .map(ing -> new ReceptIngredientDTO(
+                            ing.getId(),
+                            ing.getName(),
+                            "по вкусу" // Значение по умолчанию
+                    ))
                     .collect(Collectors.toList());
             dto.setIngredients(ingredients);
         }

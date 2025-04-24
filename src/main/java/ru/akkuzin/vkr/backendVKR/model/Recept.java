@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.sql.Time;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,8 +28,31 @@ public class Recept {
     @NotNull
     private String discription;
 
+
+    @Transient
+    private List<String> ingredientQuantities;
+
+    public List<String> getIngredientQuantities() {
+        return ingredientQuantities;
+    }
+
+    public void setIngredientQuantities(List<String> ingredientQuantities) {
+        this.ingredientQuantities = ingredientQuantities;
+    }
+
     @OneToMany(mappedBy = "recept", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Mealplan> mealPlans;
+
+    @OneToMany(mappedBy = "recept", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ReceptIngredient> receptIngredients = new HashSet<>();
+
+    public Set<ReceptIngredient> getReceptIngredients() {
+        return receptIngredients;
+    }
+
+    public void setReceptIngredients(Set<ReceptIngredient> receptIngredients) {
+        this.receptIngredients = receptIngredients;
+    }
 
     public List<Mealplan> getMealPlans() {
         return mealPlans;

@@ -31,6 +31,24 @@ public class ReceptCreateDTO {
 
     private List<@NotBlank String> filterNames;
 
+    private List<ReceptIngredientDTO> ingredients;
+    private List<String> ingredientQuantities;
+
+    public List<ReceptIngredientDTO> getIngredients() {
+        return ingredients;
+    }
+
+    public void setIngredients(List<ReceptIngredientDTO> ingredients) {
+        this.ingredients = ingredients;
+    }
+
+    public List<String> getIngredientQuantities() {
+        return ingredientQuantities;
+    }
+
+    public void setIngredientQuantities(List<String> ingredientQuantities) {
+        this.ingredientQuantities = ingredientQuantities;
+    }
 
     public @NotNull(message = "Укажите приватность рецепта") Boolean getPrivate() {
         return isPrivate;

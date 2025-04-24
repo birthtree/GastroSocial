@@ -15,11 +15,19 @@ public class ReceptResponseDTO {
     private int ownerId;
     private OwnerDTO owner;
     private List<String> ingredientNames;
-    private List<IngredientDTO> ingredients;
     private List<FilterDTO> filters;
     private String imageUrl;
     private List<String> cookingSteps;
+    private List<ReceptIngredientDTO> ingredients;
+    private List<String> ingredientQuantities;
 
+    public List<String> getIngredientQuantities() {
+        return ingredientQuantities;
+    }
+
+    public void setIngredientQuantities(List<String> ingredientQuantities) {
+        this.ingredientQuantities = ingredientQuantities;
+    }
 
     public String getImageUrl() {
         return imageUrl;
@@ -44,6 +52,8 @@ public class ReceptResponseDTO {
         dto.setDescription(recept.getDiscription());
         dto.setDuration(recept.getDuration());
         dto.setPrivate(recept.isPrivate());
+        dto.setImageUrl(recept.getImageUrl());
+        dto.setCookingSteps(recept.getCookingSteps());
 
         // Преобразование владельца
         if (recept.getOwner() != null) {
@@ -56,10 +66,14 @@ public class ReceptResponseDTO {
             dto.setOwner(ownerDto);
         }
 
-        // Преобразование ингредиентов
-        if (recept.getIngredients() != null) {
-            List<IngredientDTO> ingredients = recept.getIngredients().stream()
-                    .map(ing -> new IngredientDTO(ing.getId(), ing.getName()))
+        // Преобразование ингредиентов (теперь с quantity)
+        if (recept.getReceptIngredients() != null) {
+            List<ReceptIngredientDTO> ingredients = recept.getReceptIngredients().stream()
+                    .map(ri -> new ReceptIngredientDTO(
+                            ri.getIngredient().getId(),
+                            ri.getIngredient().getName(),
+                            ri.getQuantity()
+                    ))
                     .collect(Collectors.toList());
             dto.setIngredients(ingredients);
         }
@@ -67,7 +81,11 @@ public class ReceptResponseDTO {
         // Преобразование фильтров
         if (recept.getFilters() != null) {
             List<FilterDTO> filters = recept.getFilters().stream()
-                    .map(f -> new FilterDTO(f.getId(), f.getNameOfFilter(), f.getTypeOfFilter()))
+                    .map(f -> new FilterDTO(
+                            f.getId(),
+                            f.getNameOfFilter(),
+                            f.getTypeOfFilter()
+                    ))
                     .collect(Collectors.toList());
             dto.setFilters(filters);
         }
@@ -100,11 +118,11 @@ public class ReceptResponseDTO {
     public List<String> getIngredientNames() { return ingredientNames; }
     public void setIngredientNames(List<String> ingredientNames) { this.ingredientNames = ingredientNames; }
 
-    public List<IngredientDTO> getIngredients() {
+    public List<ReceptIngredientDTO> getIngredients() {
         return ingredients;
     }
 
-    public void setIngredients(List<IngredientDTO> ingredients) {
+    public void setIngredients(List<ReceptIngredientDTO> ingredients) {
         this.ingredients = ingredients;
     }
 

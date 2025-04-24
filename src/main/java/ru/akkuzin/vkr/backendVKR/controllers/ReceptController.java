@@ -7,8 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
-import ru.akkuzin.vkr.backendVKR.dto.ReceptCreateDTO;
-import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
+import ru.akkuzin.vkr.backendVKR.dto.*;
 import ru.akkuzin.vkr.backendVKR.model.Person;
 import ru.akkuzin.vkr.backendVKR.model.Recept;
 import ru.akkuzin.vkr.backendVKR.services.PeopleService;
@@ -60,26 +59,28 @@ public class ReceptController {
             throw new ReceptNotCreatedException(getErrorMessage(bindingResult));
         }
 
-        // Создаем объект Recept из DTO (без ингредиентов и фильтров)
+        // Создаем объект Recept из DTO
         Recept recept = new Recept();
         recept.setName(receptDTO.getName());
         recept.setDiscription(receptDTO.getDescription());
         recept.setDuration(receptDTO.getDuration());
         recept.setPrivate(receptDTO.getIsPrivate());
+        recept.setImageUrl(receptDTO.getImageUrl());
+        recept.setCookingSteps(receptDTO.getCookingSteps());
+
+        // Устанавливаем списки для обработки в сервисе
+        recept.setIngredientNames(receptDTO.getIngredientNames());
+        recept.setIngredientQuantities(receptDTO.getIngredientQuantities());
+        recept.setFilterNames(receptDTO.getFilterNames());
 
         // Устанавливаем владельца
         Person owner = peopleService.findByEmail(receptDTO.getOwnerEmail());
         recept.setOwner(owner);
 
-        // Вызываем service с передачей списков названий
-        Recept updatedRecept = receptService.update(
-                id,
-                recept,
-                receptDTO.getIngredientNames(),  // List<String>
-                receptDTO.getFilterNames()       // List<String>
-        );
+        // Вызываем service с передачей полного объекта Recept
+        Recept updatedRecept = receptService.update(id, recept);
 
-        return ResponseEntity.ok(ReceptMapper.toResponseDTO(updatedRecept));
+        return ResponseEntity.ok(convertToResponseDTO(updatedRecept));
     }
 
     @PostMapping
@@ -99,19 +100,66 @@ public class ReceptController {
         recept.setPrivate(receptDTO.getIsPrivate());
         recept.setImageUrl(receptDTO.getImageUrl());
         recept.setCookingSteps(receptDTO.getCookingSteps());
+
+        // Устанавливаем списки для обработки в сервисе
         recept.setIngredientNames(receptDTO.getIngredientNames());
+        recept.setIngredientQuantities(receptDTO.getIngredientQuantities());
         recept.setFilterNames(receptDTO.getFilterNames());
 
         // Устанавливаем владельца
         Person owner = peopleService.findByEmail(receptDTO.getOwnerEmail());
         recept.setOwner(owner);
 
-        // Сохраняем и получаем сохраненную сущность
+        // Сохраняем через метод save()
         Recept savedRecept = receptService.save(recept);
 
-        // Преобразуем в DTO и возвращаем
+        // Конвертируем в DTO для ответа
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ReceptMapper.toResponseDTO(savedRecept));
+                .body(convertToResponseDTO(savedRecept));
+    }
+
+
+    private ReceptResponseDTO convertToResponseDTO(Recept recept) {
+        ReceptResponseDTO dto = new ReceptResponseDTO();
+        dto.setId(recept.getId());
+        dto.setName(recept.getName());
+        dto.setDescription(recept.getDiscription());
+        dto.setDuration(recept.getDuration());
+        dto.setPrivate(recept.isPrivate());
+        dto.setImageUrl(recept.getImageUrl());
+        dto.setCookingSteps(recept.getCookingSteps());
+
+        if (recept.getOwner() != null) {
+            OwnerDTO ownerDto = new OwnerDTO();
+            ownerDto.setId(recept.getOwner().getId());
+            ownerDto.setEmail(recept.getOwner().getEmail());
+            ownerDto.setName(recept.getOwner().getName());
+            ownerDto.setSecondName(recept.getOwner().getSecondName());
+            ownerDto.setPatronymic(recept.getOwner().getPatronymic());
+            dto.setOwner(ownerDto);
+        }
+
+        if (recept.getReceptIngredients() != null) {
+            dto.setIngredients(recept.getReceptIngredients().stream()
+                    .map(ri -> new ReceptIngredientDTO(
+                            ri.getIngredient().getId(),
+                            ri.getIngredient().getName(),
+                            ri.getQuantity()
+                    ))
+                    .collect(Collectors.toList()));
+        }
+
+        if (recept.getFilters() != null) {
+            dto.setFilters(recept.getFilters().stream()
+                    .map(f -> new FilterDTO(
+                            f.getId(),
+                            f.getNameOfFilter(),
+                            f.getTypeOfFilter()
+                    ))
+                    .collect(Collectors.toList()));
+        }
+
+        return dto;
     }
 
     private String getErrorMessage(BindingResult bindingResult) {

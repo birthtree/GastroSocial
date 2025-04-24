@@ -13,6 +13,7 @@ import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.ReceptRepository;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +43,28 @@ public class MealPlanService {
         mealPlan.setPerson(person);
 
         mealPlanRepository.save(mealPlan);
+    }
+
+
+    @Transactional
+    public void saveOrUpdateMealPlan(MealPlanDTO dto) {
+        // 1. Находим существующую запись (если есть)
+        Optional<Mealplan> existingPlan = mealPlanRepository.findByDateAndMealTypeAndPersonId(
+                dto.getDate(),
+                dto.getMealType(),
+                personRepository.findByEmail(dto.getEmail())
+                        .orElseThrow().getId()
+        );
+
+        // 2. Если запись существует - обновляем, иначе создаём новую
+        Mealplan plan = existingPlan.orElse(new Mealplan());
+
+        plan.setDate(dto.getDate());
+        plan.setMealType(dto.getMealType());
+        plan.setRecept(receptRepository.findById(dto.getReceptId()).orElseThrow());
+        plan.setPerson(personRepository.findByEmail(dto.getEmail()).orElseThrow());
+
+        mealPlanRepository.save(plan);
     }
 
     public List<MealPlanDTO> getMealPlanByDate(LocalDate date, String email) {

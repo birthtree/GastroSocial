@@ -1,10 +1,8 @@
 package ru.akkuzin.vkr.backendVKR.util;
 
-import ru.akkuzin.vkr.backendVKR.dto.FilterDTO;
-import ru.akkuzin.vkr.backendVKR.dto.IngredientDTO;
-import ru.akkuzin.vkr.backendVKR.dto.OwnerDTO;
-import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
+import ru.akkuzin.vkr.backendVKR.dto.*;
 import ru.akkuzin.vkr.backendVKR.model.Recept;
+import ru.akkuzin.vkr.backendVKR.model.ReceptIngredient;
 
 import java.util.stream.Collectors;
 
@@ -18,41 +16,52 @@ public class ReceptMapper {
         dto.setPrivate(recept.isPrivate());
         dto.setCookingSteps(recept.getCookingSteps());
         dto.setImageUrl(recept.getImageUrl());
+
         // Маппинг владельца
         if (recept.getOwner() != null) {
-            OwnerDTO ownerDTO = new OwnerDTO();
-            ownerDTO.setId(recept.getOwner().getId());
-            ownerDTO.setEmail(recept.getOwner().getEmail());
-            ownerDTO.setName(recept.getOwner().getName());
-            ownerDTO.setSecondName(recept.getOwner().getSecondName());
-            ownerDTO.setPatronymic(recept.getOwner().getPatronymic());
-            dto.setOwner(ownerDTO);
+            dto.setOwner(mapOwner(recept.getOwner()));
         }
 
-        if (recept.getIngredients() != null) {
-            dto.setIngredients(recept.getIngredients().stream()
-                    .map(ingredient -> {
-                        IngredientDTO ingredientDTO = new IngredientDTO();
-                        ingredientDTO.setId(ingredient.getId());
-                        ingredientDTO.setName(ingredient.getName());
-                        return ingredientDTO;
-                    })
+        // Маппинг ингредиентов с количеством
+        if (recept.getReceptIngredients() != null) {
+            dto.setIngredients(recept.getReceptIngredients().stream()
+                    .map(ReceptMapper::mapIngredient)
                     .collect(Collectors.toList()));
         }
 
         // Маппинг фильтров
         if (recept.getFilters() != null) {
             dto.setFilters(recept.getFilters().stream()
-                    .map(filter -> {
-                        FilterDTO filterDTO = new FilterDTO();
-                        filterDTO.setId(filter.getId());
-                        filterDTO.setName(filter.getNameOfFilter());
-                        filterDTO.setType(filter.getTypeOfFilter());
-                        return filterDTO;
-                    })
+                    .map(ReceptMapper::mapFilter)
                     .collect(Collectors.toList()));
         }
 
         return dto;
+    }
+
+    private static OwnerDTO mapOwner(ru.akkuzin.vkr.backendVKR.model.Person owner) {
+        OwnerDTO ownerDTO = new OwnerDTO();
+        ownerDTO.setId(owner.getId());
+        ownerDTO.setEmail(owner.getEmail());
+        ownerDTO.setName(owner.getName());
+        ownerDTO.setSecondName(owner.getSecondName());
+        ownerDTO.setPatronymic(owner.getPatronymic());
+        return ownerDTO;
+    }
+
+    private static ReceptIngredientDTO mapIngredient(ReceptIngredient ri) {
+        ReceptIngredientDTO dto = new ReceptIngredientDTO();
+        dto.setIngredientId(ri.getIngredient().getId());
+        dto.setName(ri.getIngredient().getName());
+        dto.setQuantity(ri.getQuantity());
+        return dto;
+    }
+
+    private static FilterDTO mapFilter(ru.akkuzin.vkr.backendVKR.model.Filters filter) {
+        FilterDTO filterDTO = new FilterDTO();
+        filterDTO.setId(filter.getId());
+        filterDTO.setName(filter.getNameOfFilter());
+        filterDTO.setType(filter.getTypeOfFilter());
+        return filterDTO;
     }
 }

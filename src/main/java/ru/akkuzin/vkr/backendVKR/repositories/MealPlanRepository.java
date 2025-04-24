@@ -5,8 +5,14 @@ import ru.akkuzin.vkr.backendVKR.model.Mealplan;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface MealPlanRepository extends JpaRepository<Mealplan, Long> {
     List<Mealplan> findByDateAndPersonId(LocalDate date, Long personId);
     List<Mealplan> findByDateBetweenAndPersonId(LocalDate startDate, LocalDate endDate, Long personId);
+    Optional<Mealplan> findByDateAndMealTypeAndPersonId(
+            LocalDate date,
+            String mealType,
+            int personId
+    );
 }
