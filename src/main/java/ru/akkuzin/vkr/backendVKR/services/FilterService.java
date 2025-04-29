@@ -30,6 +30,10 @@ public class FilterService {
                 .orElseThrow(FilterNotFoundException::new);
     }
 
+
+
+
+
     @Transactional
     public void deleteById(int id) {
         if (!filterRepository.existsById(id)) {
@@ -50,6 +54,24 @@ public class FilterService {
         existingFilter.setTypeOfFilter(filters.getTypeOfFilter());
         filterRepository.save(existingFilter);
     }
+
+
+
+    @Transactional
+    public Filters findOrCreate(String name) {
+        return filterRepository.findByNameOfFilterIgnoreCase(name)
+                .orElseGet(() -> {
+                    Filters filter = new Filters();
+                    filter.setNameOfFilter(name);
+
+                    // Установим typeOfFilter как (максимальный + 1) или 1 если база пустая
+                    Integer maxTypeOfFilter = filterRepository.findMaxTypeOfFilter();
+                    filter.setTypeOfFilter(maxTypeOfFilter != null ? maxTypeOfFilter + 1 : 1);
+
+                    return filterRepository.save(filter);
+                });
+    }
+
 
     public Filters getOrCreateFilterByName(String name) {
         if (name == null || name.trim().isEmpty()) {

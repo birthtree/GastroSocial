@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/recepts")
+@RequestMapping("/api/recepts")
 public class ReceptController {
     private final ReceptService receptService;
     private final PeopleService peopleService;
@@ -61,6 +62,7 @@ public class ReceptController {
         }
     }
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<ReceptResponseDTO> update(
             @PathVariable int id,
             @RequestBody @Valid ReceptCreateDTO receptDTO,
@@ -70,28 +72,25 @@ public class ReceptController {
             throw new ReceptNotCreatedException(getErrorMessage(bindingResult));
         }
 
-        // Создаем объект Recept из DTO
-        Recept recept = new Recept();
-        recept.setName(receptDTO.getName());
-        recept.setDiscription(receptDTO.getDescription());
-        recept.setDuration(receptDTO.getDuration());
-        recept.setPrivate(receptDTO.getIsPrivate());
-        recept.setImageUrl(receptDTO.getImageUrl());
-        recept.setCookingSteps(receptDTO.getCookingSteps());
+        Recept updatedRecept = new Recept();
+        updatedRecept.setName(receptDTO.getName());
+        updatedRecept.setDiscription(receptDTO.getDescription());
+        updatedRecept.setDuration(receptDTO.getDuration());
+        updatedRecept.setPrivate(receptDTO.getIsPrivate());
+        updatedRecept.setImageUrl(receptDTO.getImageUrl());
+        updatedRecept.setCookingSteps(receptDTO.getCookingSteps());
+        updatedRecept.setIngredientNames(receptDTO.getIngredientNames());
+        updatedRecept.setIngredientQuantities(receptDTO.getIngredientQuantities());
+        updatedRecept.setFilterNames(receptDTO.getFilterNames());
 
-        // Устанавливаем списки для обработки в сервисе
-        recept.setIngredientNames(receptDTO.getIngredientNames());
-        recept.setIngredientQuantities(receptDTO.getIngredientQuantities());
-        recept.setFilterNames(receptDTO.getFilterNames());
-
-        // Устанавливаем владельца
+        // Найти владельца
         Person owner = peopleService.findByEmail(receptDTO.getOwnerEmail());
-        recept.setOwner(owner);
+        updatedRecept.setOwner(owner);
 
-        // Вызываем service с передачей полного объекта Recept
-        Recept updatedRecept = receptService.update(id, recept);
+        // Важно: вызвать service.update через твой метод
+        Recept savedRecept = receptService.update(id, updatedRecept);
 
-        return ResponseEntity.ok(convertToResponseDTO(updatedRecept));
+        return ResponseEntity.ok(convertToResponseDTO(savedRecept));
     }
 
     @PostMapping
@@ -127,6 +126,24 @@ public class ReceptController {
         // Конвертируем в DTO для ответа
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(convertToResponseDTO(savedRecept));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<ReceptResponseDTO>> getMyRecipes(
+            @RequestHeader("User-Email") String userEmail) {
+
+        // Получаем пользователя по email
+        Person owner = peopleService.findByEmail(userEmail);
+
+        // Получаем все рецепты этого пользователя
+        List<Recept> myRecipes = receptService.findByOwner(owner);
+
+        // Конвертируем в DTO
+        List<ReceptResponseDTO> response = myRecipes.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
     }
 
 

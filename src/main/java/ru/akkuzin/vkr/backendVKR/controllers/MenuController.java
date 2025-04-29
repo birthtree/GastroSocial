@@ -6,6 +6,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/menu")
+@RequestMapping("/api/menu")
 public class MenuController {
 }

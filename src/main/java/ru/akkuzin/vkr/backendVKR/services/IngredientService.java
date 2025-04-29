@@ -16,6 +16,15 @@ public class IngredientService {
     private final IngredientRepository ingredientRepository;
 
 
+    @Transactional
+    public Ingredient findOrCreate(String name) {
+        return ingredientRepository.findByNameIgnoreCase(name)
+                .orElseGet(() -> {
+                    Ingredient ingredient = new Ingredient();
+                    ingredient.setName(name);
+                    return ingredientRepository.save(ingredient);
+                });
+    }
 
     @Autowired
     public IngredientService(IngredientRepository ingredientRepository) {

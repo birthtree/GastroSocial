@@ -2,6 +2,8 @@ package ru.akkuzin.vkr.backendVKR.model;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "Recept_ingredients")
 @IdClass(ReceptIngredientId.class)
@@ -18,6 +20,21 @@ public class ReceptIngredient {
 
     @Column(name = "quantity")
     private String quantity;
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReceptIngredient that = (ReceptIngredient) o;
+        return Objects.equals(recept, that.recept) &&
+                Objects.equals(ingredient, that.ingredient);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(recept, ingredient);
+    }
 
     // Геттеры и сеттеры
     public Recept getRecept() { return recept; }

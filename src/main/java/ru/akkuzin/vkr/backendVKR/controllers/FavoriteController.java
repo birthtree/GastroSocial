@@ -33,6 +33,17 @@ public class FavoriteController {
         return ResponseEntity.ok().build();
     }
 
+
+    @GetMapping("/my-recipes")
+    public ResponseEntity<List<ReceptResponseDTO>> getMyRecipes(
+            @RequestHeader("User-Email") String userEmail) {
+        List<ReceptResponseDTO> myRecipes = receptService.getRecipesByOwnerEmail(userEmail)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(myRecipes);
+    }
+
     @DeleteMapping("/{receptId}")
     public ResponseEntity<?> removeFavorite(
             @RequestHeader("User-Email") String userEmail,

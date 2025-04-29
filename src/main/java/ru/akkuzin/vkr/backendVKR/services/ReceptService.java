@@ -49,6 +49,40 @@ public class ReceptService {
         return recept.orElseThrow(ReceptNotFoundException::new);
     }
 
+
+
+    @Transactional
+    public void updateIngredients(Recept existing, List<String> ingredientNames, List<String> ingredientQuantities) {
+        existing.getReceptIngredients().clear();
+
+        for (int i = 0; i < ingredientNames.size(); i++) {
+            String ingredientName = ingredientNames.get(i);
+            Ingredient ingredient = ingredientService.getOrCreateIngredientByName(ingredientName);
+
+            ReceptIngredient receptIngredient = new ReceptIngredient();
+            receptIngredient.setRecept(existing);
+            receptIngredient.setIngredient(ingredient);
+
+            // Установить количество ингредиента, если передано
+            if (ingredientQuantities != null && i < ingredientQuantities.size()) {
+                receptIngredient.setQuantity(ingredientQuantities.get(i));
+            }
+
+            existing.getReceptIngredients().add(receptIngredient);
+        }
+    }
+
+    @Transactional
+    public void updateFilters(Recept existing, List<String> filterNames) {
+        existing.getFilters().clear();
+        for (String name : filterNames) {
+            Filters filter = filterService.getOrCreateFilterByName(name);
+            existing.getFilters().add(filter);
+        }
+    }
+
+
+
     @Transactional
     public Recept update(int id, Recept updatedRecept) {
         Recept recept = findById(id);
@@ -61,14 +95,16 @@ public class ReceptService {
         recept.setImageUrl(updatedRecept.getImageUrl());
         recept.setCookingSteps(updatedRecept.getCookingSteps());
 
-        // Обработка ингредиентов с количествами
-        if (updatedRecept.getIngredientNames() != null &&
-                updatedRecept.getIngredientQuantities() != null) {
-
-            // Удаляем старые связи
+        // Удаляем старые ингредиенты (минимальное изменение)
+        if (recept.getReceptIngredients() != null) {
+            // Сначала удаляем из базы
+            receptIngredientRepository.deleteAllByReceptId(recept.getId());
+            // Затем очищаем коллекцию
             recept.getReceptIngredients().clear();
+        }
 
-            // Создаем новые связи с количествами
+        // Создаем новые связи с количествами (остаётся без изменений)
+        if (updatedRecept.getIngredientNames() != null && updatedRecept.getIngredientQuantities() != null) {
             for (int i = 0; i < updatedRecept.getIngredientNames().size(); i++) {
                 Ingredient ingredient = ingredientService.getOrCreateIngredientByName(
                         updatedRecept.getIngredientNames().get(i).trim());
@@ -81,7 +117,7 @@ public class ReceptService {
             }
         }
 
-        // Обработка фильтров
+        // Обработка фильтров (остаётся без изменений)
         if (updatedRecept.getFilterNames() != null) {
             Set<Filters> filters = updatedRecept.getFilterNames().stream()
                     .map(name -> filterService.getOrCreateFilterByName(name.trim()))
@@ -91,6 +127,7 @@ public class ReceptService {
 
         return receptRepository.save(recept);
     }
+
 
     @Transactional
     public Recept save(Recept recept) {
@@ -130,7 +167,7 @@ public class ReceptService {
         return receptRepository.save(recept);
     }
 
-    @Transactional
+    /*  @Transactional
     public Recept update(int id, Recept updatedRecept, List<String> ingredientNames, List<String> filterNames) {
         Recept recept = findById(id);
         peopleService.checkIfUserActive(recept.getOwner().getEmail());
@@ -157,6 +194,15 @@ public class ReceptService {
         }
 
         return receptRepository.save(recept);
+    }*/
+
+    public List<Recept> findByOwner(Person owner) {
+        return receptRepository.findByOwner(owner);
+    }
+
+    public List<Recept> getRecipesByOwnerEmail(String email) {
+        Person owner = peopleService.findByEmail(email);
+        return receptRepository.findByOwner(owner); // предполагая, что у вас есть такой метод в репозитории
     }
 
 
@@ -210,7 +256,7 @@ public class ReceptService {
         }
     }
 
-
+    @Transactional
     private void removeFromFavorites(int receptId) {
         List<Person> users = personRepository.findUsersWithFavoriteRecipe(receptId);
         if (users != null && !users.isEmpty()) {
@@ -352,8 +398,6 @@ public class ReceptService {
     }
 
 
-
-
     private ReceptResponseDTO convertToResponseDTO(Recept recept) {
         ReceptResponseDTO dto = new ReceptResponseDTO();
         dto.setId(recept.getId());
@@ -362,6 +406,7 @@ public class ReceptService {
         dto.setDuration(recept.getDuration());
         dto.setPrivate(recept.isPrivate());
         dto.setImageUrl(recept.getImageUrl());
+
         if (recept.getCookingStepsJson() != null && !recept.getCookingStepsJson().isEmpty()) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -371,12 +416,12 @@ public class ReceptService {
                 );
                 dto.setCookingSteps(steps);
             } catch (Exception e) {
-
                 dto.setCookingSteps(Collections.emptyList());
             }
         } else {
             dto.setCookingSteps(Collections.emptyList());
         }
+
         // Преобразование владельца
         if (recept.getOwner() != null) {
             OwnerDTO ownerDto = new OwnerDTO();
@@ -388,22 +433,13 @@ public class ReceptService {
             dto.setOwner(ownerDto);
         }
 
-        // Преобразование ингредиентов
+        // Преобразование ингредиентов через ReceptIngredient
         if (recept.getReceptIngredients() != null) {
             List<ReceptIngredientDTO> ingredients = recept.getReceptIngredients().stream()
                     .map(ri -> new ReceptIngredientDTO(
                             ri.getIngredient().getId(),
                             ri.getIngredient().getName(),
                             ri.getQuantity() // Добавляем количество
-                    ))
-                    .collect(Collectors.toList());
-            dto.setIngredients(ingredients);
-        } else if (recept.getIngredients() != null) { // Для обратной совместимости
-            List<ReceptIngredientDTO> ingredients = recept.getIngredients().stream()
-                    .map(ing -> new ReceptIngredientDTO(
-                            ing.getId(),
-                            ing.getName(),
-                            "по вкусу" // Значение по умолчанию
                     ))
                     .collect(Collectors.toList());
             dto.setIngredients(ingredients);

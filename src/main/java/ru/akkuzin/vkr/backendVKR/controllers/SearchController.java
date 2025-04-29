@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/find")
+@RequestMapping("/api/find")
 public class SearchController {
     private final ReceptService receptService;
 

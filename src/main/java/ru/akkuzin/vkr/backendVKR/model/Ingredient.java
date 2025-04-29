@@ -3,6 +3,7 @@ package ru.akkuzin.vkr.backendVKR.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -22,9 +23,20 @@ public class Ingredient {
     @Column(name="name")
     private String name;
 
-    @ManyToMany(mappedBy = "ingredients")
+    @OneToMany(mappedBy = "ingredient")
+    private Set<ReceptIngredient> receptIngredients = new HashSet<>();
+
+    /* @ManyToMany(mappedBy = "ingredients")
     @JsonBackReference
-    private Set<Recept> recepts;
+    private Set<Recept> recepts;*/
+
+    public Set<ReceptIngredient> getReceptIngredients() {
+        return receptIngredients;
+    }
+
+    public void setReceptIngredients(Set<ReceptIngredient> receptIngredients) {
+        this.receptIngredients = receptIngredients;
+    }
 
     public Ingredient() {
     }
@@ -49,24 +61,13 @@ public class Ingredient {
         this.name = name;
     }
 
-    public Set<Recept> getRecepts() {
+ /*   public Set<Recept> getRecepts() {
         return recepts;
     }
 
     public void setRecepts(Set<Recept> recepts) {
         this.recepts = recepts;
-    }
+    }*/
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Ingredient that = (Ingredient) o;
-        return id == that.id && Objects.equals(name, that.name) && Objects.equals(recepts, that.recepts);
-    }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, name, recepts);
-    }
 }

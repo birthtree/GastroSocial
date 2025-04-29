@@ -8,6 +8,7 @@ import ru.akkuzin.vkr.backendVKR.dto.ShoppingListDTO;
 import ru.akkuzin.vkr.backendVKR.model.Ingredient;
 import ru.akkuzin.vkr.backendVKR.model.Mealplan;
 import ru.akkuzin.vkr.backendVKR.model.Person;
+import ru.akkuzin.vkr.backendVKR.model.ReceptIngredient;
 import ru.akkuzin.vkr.backendVKR.repositories.MealPlanRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 
@@ -16,7 +17,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 @Service
 public class ShoppingListService {
     @Autowired
@@ -38,7 +38,10 @@ public class ShoppingListService {
 
         Set<Ingredient> ingredients = new HashSet<>();
         for (Mealplan mealPlan : mealPlans) {
-            ingredients.addAll(mealPlan.getRecept().getIngredients());
+            // Извлекаем ингредиенты через ReceptIngredient
+            for (ReceptIngredient receptIngredient : mealPlan.getRecept().getReceptIngredients()) {
+                ingredients.add(receptIngredient.getIngredient());  // Получаем ингредиент из ReceptIngredient
+            }
         }
 
         return new ShoppingListDTO(

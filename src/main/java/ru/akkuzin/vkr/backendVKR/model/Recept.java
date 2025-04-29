@@ -146,14 +146,21 @@ public class Recept {
         this.ingredientNames = ingredientNames;
     }
 
-    @ManyToMany
+    /*@ManyToMany
     @JoinTable(
             name = "Recept_ingredients",
             joinColumns = @JoinColumn(name = "recept_id"),
             inverseJoinColumns = @JoinColumn(name = "ingredient_id")
     )
     @JsonBackReference
-    private Set<Ingredient> ingredients;
+    private Set<Ingredient> ingredients;*/
+       /* public Set<Ingredient> getIngredients() {
+        return ingredients;
+    }
+
+    public void setIngredients(Set<Ingredient> ingredients) {
+        this.ingredients = ingredients;
+    }*/
 
     @ManyToMany
     @JoinTable(
@@ -246,11 +253,5 @@ public class Recept {
         isPrivate = aPrivate;
     }
 
-    public Set<Ingredient> getIngredients() {
-        return ingredients;
-    }
 
-    public void setIngredients(Set<Ingredient> ingredients) {
-        this.ingredients = ingredients;
-    }
 }
