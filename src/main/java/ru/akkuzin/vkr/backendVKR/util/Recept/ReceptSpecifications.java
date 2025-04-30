@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 import ru.akkuzin.vkr.backendVKR.model.Filters;
 import ru.akkuzin.vkr.backendVKR.model.Ingredient;
 import ru.akkuzin.vkr.backendVKR.model.Recept;
+import ru.akkuzin.vkr.backendVKR.model.ReceptIngredient;
 
 import java.sql.Time;
 import java.util.Set;
@@ -18,8 +19,15 @@ public class ReceptSpecifications {
 
     public static Specification<Recept> hasIngredients(Set<String> ingredientNames) {
         return (root, query, cb) -> {
-            Join<Recept, Ingredient> ingredientsJoin = root.join("ingredients");
-            return ingredientsJoin.get("name").in(ingredientNames);
+            if (ingredientNames == null || ingredientNames.isEmpty()) {
+                return cb.conjunction(); // возвращаем "true" если нет параметров
+            }
+
+            // Создаем join с промежуточной таблицей и затем с ингредиентами
+            Join<Recept, ReceptIngredient> receptIngredientJoin = root.join("receptIngredients");
+            Join<ReceptIngredient, Ingredient> ingredientJoin = receptIngredientJoin.join("ingredient");
+
+            return ingredientJoin.get("name").in(ingredientNames);
         };
     }
 
@@ -30,13 +38,17 @@ public class ReceptSpecifications {
         };
     }
 
-    public static Specification<Recept> durationLessThanOrEqual(Time maxDuration) {
+    public static Specification<Recept> durationLessThanOrEqual(Time maxTime) {
         return (root, query, cb) ->
-                cb.lessThanOrEqualTo(root.get("duration"), maxDuration);
+                maxTime == null ?
+                        cb.conjunction() :
+                        cb.lessThanOrEqualTo(root.get("duration"), maxTime);
     }
 
-    public static Specification<Recept> durationGreaterThanOrEqual(Time minDuration) {
+    public static Specification<Recept> durationGreaterThanOrEqual(Time minTime) {
         return (root, query, cb) ->
-                cb.greaterThanOrEqualTo(root.get("duration"), minDuration);
+                minTime == null ?
+                        cb.conjunction() :
+                        cb.greaterThanOrEqualTo(root.get("duration"), minTime);
     }
 }

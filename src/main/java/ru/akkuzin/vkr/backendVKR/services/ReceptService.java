@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import ru.akkuzin.vkr.backendVKR.dto.*;
 import ru.akkuzin.vkr.backendVKR.model.*;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
@@ -370,9 +372,10 @@ public class ReceptService {
                                                   Set<String> filterNames,
                                                   String maxDuration,
                                                   String minDuration) {
+
         Specification<Recept> spec = Specification.where(null);
 
-        if (name != null) {
+        if (name != null && !name.isBlank()) {
             spec = spec.and(ReceptSpecifications.nameContains(name));
         }
         if (ingredientNames != null && !ingredientNames.isEmpty()) {
@@ -381,22 +384,47 @@ public class ReceptService {
         if (filterNames != null && !filterNames.isEmpty()) {
             spec = spec.and(ReceptSpecifications.hasFilters(filterNames));
         }
-        if (maxDuration != null) {
-            spec = spec.and(ReceptSpecifications.durationLessThanOrEqual(
-                    Time.valueOf(maxDuration + ":00")));
-        }
-        if (minDuration != null) {
-            spec = spec.and(ReceptSpecifications.durationGreaterThanOrEqual(
-                    Time.valueOf(minDuration + ":00")));
+
+        try {
+            if (maxDuration != null && !maxDuration.isBlank()) {
+                spec = spec.and(ReceptSpecifications.durationLessThanOrEqual(
+                        parseTimeString(maxDuration)));
+            }
+            if (minDuration != null && !minDuration.isBlank()) {
+                spec = spec.and(ReceptSpecifications.durationGreaterThanOrEqual(
+                        parseTimeString(minDuration)));
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid time format. Use HH:mm or HH:mm:ss");
         }
 
-        List<Recept> recepts = receptRepository.findAll(spec);
-
-        return recepts.stream()
+        return receptRepository.findAll(spec).stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
 
+    private Time parseTimeString(String timeStr) {
+        if (timeStr == null || timeStr.isBlank()) {
+            return null;
+        }
+
+        // Нормализуем строку времени
+        timeStr = timeStr.trim();
+
+        // Добавляем секунды, если их нет
+        if (timeStr.matches("^\\d{1,2}:\\d{2}$")) {
+            timeStr += ":00";
+        } else if (!timeStr.matches("^\\d{1,2}:\\d{2}:\\d{2}$")) {
+            throw new IllegalArgumentException("Invalid time format");
+        }
+
+        try {
+            return Time.valueOf(timeStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid time value");
+        }
+    }
 
     private ReceptResponseDTO convertToResponseDTO(Recept recept) {
         ReceptResponseDTO dto = new ReceptResponseDTO();

@@ -11,6 +11,7 @@ import ru.akkuzin.vkr.backendVKR.model.Recept;
 import ru.akkuzin.vkr.backendVKR.repositories.MealPlanRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 import ru.akkuzin.vkr.backendVKR.repositories.ReceptRepository;
+
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,9 @@ public class MealPlanService {
     private ReceptRepository receptRepository;
 
     @Autowired
+    private ReceptService receptService;
+
+    @Autowired
     private PeopleRepository personRepository;
 
     @Transactional
@@ -32,7 +36,6 @@ public class MealPlanService {
         Recept recept = receptRepository.findById(mealPlanDTO.getReceptId())
                 .orElseThrow(() -> new EntityNotFoundException("Рецепт не найден"));
 
-        // Ищем по email вместо ID
         Person person = personRepository.findByEmail(mealPlanDTO.getEmail())
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
@@ -45,25 +48,30 @@ public class MealPlanService {
         mealPlanRepository.save(mealPlan);
     }
 
-
     @Transactional
     public void saveOrUpdateMealPlan(MealPlanDTO dto) {
-        // 1. Находим существующую запись (если есть)
-        Optional<Mealplan> existingPlan = mealPlanRepository.findByDateAndMealTypeAndPersonId(
-                dto.getDate(),
-                dto.getMealType(),
-                personRepository.findByEmail(dto.getEmail())
-                        .orElseThrow().getId()
-        );
+        // 1. Поиск рецепта с проверкой
+        Recept recept = receptRepository.findById(dto.getReceptId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        String.format("Рецепт с ID %d не найден", dto.getReceptId())));
 
-        // 2. Если запись существует - обновляем, иначе создаём новую
-        Mealplan plan = existingPlan.orElse(new Mealplan());
+        // 2. Поиск пользователя
+        Person person = personRepository.findByEmail(dto.getEmail())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        String.format("Пользователь с email %s не найден", dto.getEmail())));
 
+        // 3. Поиск или создание плана питания
+        Mealplan plan = mealPlanRepository
+                .findByDateAndMealTypeAndPersonId(dto.getDate(), dto.getMealType(), person.getId())
+                .orElse(new Mealplan());
+
+        // 4. Установка свойств
         plan.setDate(dto.getDate());
         plan.setMealType(dto.getMealType());
-        plan.setRecept(receptRepository.findById(dto.getReceptId()).orElseThrow());
-        plan.setPerson(personRepository.findByEmail(dto.getEmail()).orElseThrow());
+        plan.setRecept(recept);
+        plan.setPerson(person);
 
+        // 5. Сохранение
         mealPlanRepository.save(plan);
     }
 
@@ -71,13 +79,16 @@ public class MealPlanService {
         Person person = personRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("Пользователь не найден"));
 
-        return mealPlanRepository.findByDateAndPersonId(date, (long)person.getId()).stream()
+        return mealPlanRepository.findByDateAndPersonId(date, person.getId()).stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void deleteFromMealPlan(Long id) {
+    public void deleteFromMealPlan(int id) {
+        if (!mealPlanRepository.existsById(id)) {
+            throw new EntityNotFoundException("Запись плана питания не найдена");
+        }
         mealPlanRepository.deleteById(id);
     }
 
@@ -88,6 +99,7 @@ public class MealPlanService {
         dto.setMealType(mealPlan.getMealType());
         dto.setReceptId(mealPlan.getRecept().getId());
         dto.setPersonId(mealPlan.getPerson().getId());
+        dto.setEmail(mealPlan.getPerson().getEmail());
         return dto;
     }
 }

@@ -1,11 +1,13 @@
 package ru.akkuzin.vkr.backendVKR.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
 import ru.akkuzin.vkr.backendVKR.services.ReceptService;
 
+import java.sql.Time;
 import java.util.List;
 import java.util.Set;
 
@@ -62,8 +64,9 @@ public class SearchController {
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Set<String> ingredientNames,
             @RequestParam(required = false) Set<String> filterNames,
-            @RequestParam(required = false) String maxDuration,
-            @RequestParam(required = false) String minDuration) {
+            @RequestParam(required = false) String maxDuration,  // Оставляем String
+            @RequestParam(required = false) String minDuration) { // Оставляем String
+
         return ResponseEntity.ok(receptService.advancedSearch(
                 name, ingredientNames, filterNames, maxDuration, minDuration));
     }

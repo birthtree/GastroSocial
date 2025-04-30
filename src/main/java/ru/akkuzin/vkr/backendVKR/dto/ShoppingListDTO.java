@@ -5,29 +5,20 @@ import java.util.List;
 
 public class ShoppingListDTO {
     private LocalDate date;
-    private List<IngredientDTO> ingredients;
+    private List<ReceptIngredientDTO> ingredients;
 
-    public ShoppingListDTO() {
-    }
+    // Конструкторы
+    public ShoppingListDTO() {}
 
-    public ShoppingListDTO(LocalDate date, List<IngredientDTO> ingredients) {
+    public ShoppingListDTO(LocalDate date, List<ReceptIngredientDTO> ingredients) {
         this.date = date;
         this.ingredients = ingredients;
     }
 
-    public LocalDate getDate() {
-        return date;
-    }
+    // Геттеры и сеттеры
+    public LocalDate getDate() { return date; }
+    public void setDate(LocalDate date) { this.date = date; }
 
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public List<IngredientDTO> getIngredients() {
-        return ingredients;
-    }
-
-    public void setIngredients(List<IngredientDTO> ingredients) {
-        this.ingredients = ingredients;
-    }
+    public List<ReceptIngredientDTO> getIngredients() { return ingredients; }
+    public void setIngredients(List<ReceptIngredientDTO> ingredients) { this.ingredients = ingredients; }
 }

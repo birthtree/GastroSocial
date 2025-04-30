@@ -35,7 +35,7 @@ public class MealPlanController {
     }
 
     @DeleteMapping("/plan/{id}")
-    public ResponseEntity<?> deleteFromMealPlan(@PathVariable Long id) {
+    public ResponseEntity<?> deleteFromMealPlan(@PathVariable int id) {
         mealPlanService.deleteFromMealPlan(id);
         return ResponseEntity.ok("Рецепт удалён из плана меню");
     }

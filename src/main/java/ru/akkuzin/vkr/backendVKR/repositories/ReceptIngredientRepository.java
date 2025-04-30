@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.akkuzin.vkr.backendVKR.model.ReceptIngredient;
 import ru.akkuzin.vkr.backendVKR.model.ReceptIngredientId;
+import java.util.List;
+import ru.akkuzin.vkr.backendVKR.model.Recept;
 
 public interface ReceptIngredientRepository extends JpaRepository<ReceptIngredient, ReceptIngredientId> {
 
+    List<ReceptIngredient> findByRecept(Recept recept);
 
     @Modifying
     @Query("DELETE FROM ReceptIngredient ri WHERE ri.recept.id = :receptId")
