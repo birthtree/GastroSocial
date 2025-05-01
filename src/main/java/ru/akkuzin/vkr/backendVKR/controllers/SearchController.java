@@ -9,6 +9,7 @@ import ru.akkuzin.vkr.backendVKR.services.ReceptService;
 
 import java.sql.Time;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -70,4 +71,21 @@ public class SearchController {
         return ResponseEntity.ok(receptService.advancedSearch(
                 name, ingredientNames, filterNames, maxDuration, minDuration));
     }
+
+    @GetMapping("/random")
+    public ResponseEntity<ReceptResponseDTO> getRandomRecept(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Set<String> ingredientNames,
+            @RequestParam(required = false) Set<String> filterNames,
+            @RequestParam(required = false) String maxDuration,
+            @RequestParam(required = false) String minDuration
+    ) {
+        Optional<ReceptResponseDTO> result = receptService.getRandomRecept(
+                name, ingredientNames, filterNames, maxDuration, minDuration
+        );
+
+        return result.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
 }

@@ -80,4 +80,7 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
     @EntityGraph(attributePaths = {"receptIngredients.ingredient", "filters", "owner"})
     @Override
     List<Recept> findAll();
+
+
+
 }

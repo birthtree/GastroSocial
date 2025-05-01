@@ -53,6 +53,30 @@ public class Person {
     @Size(min = 2, max = 30, message = "Name shoud be 2 and 30 char")
     private String name;
 
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "about", columnDefinition = "TEXT")
+    private String about;
+
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getAbout() {
+        return about;
+    }
+
+    public void setAbout(String about) {
+        this.about = about;
+    }
+
     public String getSecondName() {
         return secondName;
     }

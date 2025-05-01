@@ -5,6 +5,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.akkuzin.vkr.backendVKR.dto.ProfileDTO;
 import ru.akkuzin.vkr.backendVKR.model.Person;
 import ru.akkuzin.vkr.backendVKR.repositories.PeopleRepository;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotFoundException;
@@ -126,4 +127,61 @@ public class PeopleService {
         person.setRole(newRole);
         peopleRepository.save(person);
     }
+
+
+
+    public ProfileDTO getProfileInfo(int id) {
+        Person person = findOne(id);
+        return convertToProfileDTO(person);
+    }
+
+    public ProfileDTO getProfileInfoByEmail(String email) {
+        Person person = findByEmail(email);
+        return convertToProfileDTO(person);
+    }
+
+    @Transactional
+    public void updateProfileInfo(int id, ProfileDTO profileDTO) {
+        Person person = findOne(id);
+        updatePersonFromProfileDTO(person, profileDTO);
+        peopleRepository.save(person);
+    }
+
+    @Transactional
+    public void updateProfileInfoByEmail(String email, ProfileDTO profileDTO) {
+        Person person = findByEmail(email);
+        updatePersonFromProfileDTO(person, profileDTO);
+        peopleRepository.save(person);
+    }
+
+    private ProfileDTO convertToProfileDTO(Person person) {
+        ProfileDTO dto = new ProfileDTO();
+        dto.setId(person.getId());
+        dto.setName(person.getName());
+        dto.setSecondName(person.getSecondName());
+        dto.setPatronymic(person.getPatronymic());
+        dto.setAbout(person.getAbout());
+        dto.setImageUrl(person.getImageUrl());
+        return dto;
+    }
+
+    private void updatePersonFromProfileDTO(Person person, ProfileDTO profileDTO) {
+        if (profileDTO.getName() != null) {
+            person.setName(profileDTO.getName());
+        }
+        if (profileDTO.getSecondName() != null) {
+            person.setSecondName(profileDTO.getSecondName());
+        }
+        if (profileDTO.getPatronymic() != null) {
+            person.setPatronymic(profileDTO.getPatronymic());
+        }
+        if (profileDTO.getAbout() != null) {
+            person.setAbout(profileDTO.getAbout());
+        }
+        if (profileDTO.getImageUrl() != null) {
+            person.setImageUrl(profileDTO.getImageUrl());
+        }
+    }
+
+
 }

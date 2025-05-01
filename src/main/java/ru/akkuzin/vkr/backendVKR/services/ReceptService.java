@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 import ru.akkuzin.vkr.backendVKR.dto.*;
 import ru.akkuzin.vkr.backendVKR.model.*;
@@ -524,6 +525,51 @@ public class ReceptService {
                         .anyMatch(r -> r.getId() == receptId))
                 .orElse(false);
     }
+
+
+
+    public Optional<ReceptResponseDTO> getRandomRecept(
+            String name,
+            Set<String> ingredientNames,
+            Set<String> filterNames,
+            String maxDuration,
+            String minDuration
+    ) {
+        Specification<Recept> spec = buildRandomSpecification(
+                name, ingredientNames, filterNames, maxDuration, minDuration
+        );
+
+        List<Recept> allRecepts = receptRepository.findAll(spec);
+
+        return allRecepts.isEmpty()
+                ? Optional.empty()
+                : Optional.of(convertToResponseDTO(getRandomElement(allRecepts)));
+    }
+
+    private Specification<Recept> buildRandomSpecification(
+            String name,
+            Set<String> ingredientNames,
+            Set<String> filterNames,
+            String maxDuration,
+            String minDuration
+    ) {
+        return Specification.where(name != null ? ReceptSpecifications.nameContains(name) : null)
+                .and(!CollectionUtils.isEmpty(ingredientNames) ?
+                        ReceptSpecifications.hasIngredients(ingredientNames) : null)
+                .and(!CollectionUtils.isEmpty(filterNames) ?
+                        ReceptSpecifications.hasFilters(filterNames) : null)
+                .and(minDuration != null ?
+                        ReceptSpecifications.durationGreaterThanOrEqual(parseTimeString(minDuration)) : null)
+                .and(maxDuration != null ?
+                        ReceptSpecifications.durationLessThanOrEqual(parseTimeString(maxDuration)) : null);
+    }
+
+    private <T> T getRandomElement(List<T> list) {
+        return list.get(new Random().nextInt(list.size()));
+    }
+
+
+
 
 
 }

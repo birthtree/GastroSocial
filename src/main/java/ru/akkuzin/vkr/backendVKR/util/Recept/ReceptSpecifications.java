@@ -45,10 +45,23 @@ public class ReceptSpecifications {
                         cb.lessThanOrEqualTo(root.get("duration"), maxTime);
     }
 
+
+    public static Specification<Recept> randomOrder() {
+        return (root, query, cb) -> {
+            // Для PostgreSQL/H2
+            query.orderBy(cb.asc(cb.function("RANDOM", Double.class)));
+            // Для MySQL замените на: cb.function("RAND", Double.class)
+            return null; // Не влияет на WHERE-условия
+        };
+    }
+
+
     public static Specification<Recept> durationGreaterThanOrEqual(Time minTime) {
         return (root, query, cb) ->
                 minTime == null ?
                         cb.conjunction() :
                         cb.greaterThanOrEqualTo(root.get("duration"), minTime);
     }
+
+
 }

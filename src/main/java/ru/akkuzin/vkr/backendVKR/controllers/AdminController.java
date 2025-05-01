@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import ru.akkuzin.vkr.backendVKR.dto.ProfileDTO;
 import ru.akkuzin.vkr.backendVKR.dto.ReceptResponseDTO;
 import ru.akkuzin.vkr.backendVKR.dto.UserDTO;
 import ru.akkuzin.vkr.backendVKR.model.Person;
@@ -109,4 +110,34 @@ public class AdminController {
         dto.setActive(person.isActive());
         return dto;
     }
+
+    @GetMapping("/users/profile/{id}")
+    public ResponseEntity<ProfileDTO> getUserProfile(@PathVariable int id) {
+        ProfileDTO profile = peopleService.getProfileInfo(id);
+        return ResponseEntity.ok(profile);
+    }
+
+    @GetMapping("/users/profile/by-email")
+    public ResponseEntity<ProfileDTO> getUserProfileByEmail(@RequestParam String email) {
+        ProfileDTO profile = peopleService.getProfileInfoByEmail(email);
+        return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/users/profile/{id}")
+    public ResponseEntity<?> updateUserProfile(
+            @PathVariable int id,
+            @RequestBody ProfileDTO profileDTO) {
+        peopleService.updateProfileInfo(id, profileDTO);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/users/profile/by-email")
+    public ResponseEntity<?> updateUserProfileByEmail(
+            @RequestParam String email,
+            @RequestBody ProfileDTO profileDTO) {
+        peopleService.updateProfileInfoByEmail(email, profileDTO);
+        return ResponseEntity.ok().build();
+    }
+
+
 }

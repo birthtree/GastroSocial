@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
+import ru.akkuzin.vkr.backendVKR.dto.ProfileDTO;
 import ru.akkuzin.vkr.backendVKR.model.Person;
 import ru.akkuzin.vkr.backendVKR.services.PeopleService;
 import ru.akkuzin.vkr.backendVKR.util.PersonNotCreatedException;
@@ -81,4 +82,57 @@ public class PeopleController {
         peopleService.deleteById(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204
     }
+
+    @GetMapping("/profile/{id}")
+    public ResponseEntity<ProfileDTO> getProfile(@PathVariable int id) {
+        ProfileDTO profile = peopleService.getProfileInfo(id);
+        return ResponseEntity.ok(profile);
+    }
+
+    @GetMapping("/profile/by-email")
+    public ResponseEntity<ProfileDTO> getProfileByEmail(@RequestParam String email) {
+        ProfileDTO profile = peopleService.getProfileInfoByEmail(email);
+        return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/profile/{id}")
+    public ResponseEntity<HttpStatus> updateProfile(
+            @PathVariable int id,
+            @RequestBody @Valid ProfileDTO profileDTO,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            StringBuilder errorMsg = new StringBuilder();
+            List<FieldError> errors = bindingResult.getFieldErrors();
+            for (FieldError error : errors) {
+                errorMsg.append(error.getField())
+                        .append(" - ").append(error.getDefaultMessage())
+                        .append("; ");
+            }
+            throw new PersonNotCreatedException(errorMsg.toString());
+        }
+
+        peopleService.updateProfileInfo(id, profileDTO);
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @PutMapping("/profile/by-email")
+    public ResponseEntity<HttpStatus> updateProfileByEmail(
+            @RequestParam String email,
+            @RequestBody @Valid ProfileDTO profileDTO,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            StringBuilder errorMsg = new StringBuilder();
+            List<FieldError> errors = bindingResult.getFieldErrors();
+            for (FieldError error : errors) {
+                errorMsg.append(error.getField())
+                        .append(" - ").append(error.getDefaultMessage())
+                        .append("; ");
+            }
+            throw new PersonNotCreatedException(errorMsg.toString());
+        }
+
+        peopleService.updateProfileInfoByEmail(email, profileDTO);
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
 }
