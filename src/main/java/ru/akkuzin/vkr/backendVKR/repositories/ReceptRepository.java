@@ -81,6 +81,6 @@ public interface ReceptRepository extends JpaRepository<Recept, Integer>, JpaSpe
     @Override
     List<Recept> findAll();
 
-
+    List<Recept> findByOwnerAndIsPrivateFalse(Person owner);
 
 }

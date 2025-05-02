@@ -9,6 +9,24 @@ public class ProfileDTO {
     private String patronymic;
     private String about;
     private String imageUrl;
+    private String role;
+    private boolean active;
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 
     // Геттеры и сеттеры
     public int getId() {

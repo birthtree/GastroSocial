@@ -19,6 +19,7 @@ import ru.akkuzin.vkr.backendVKR.util.PersonNotCreatedException;
 import ru.akkuzin.vkr.backendVKR.util.Recept.ReceptNotCreatedException;
 import ru.akkuzin.vkr.backendVKR.util.ReceptMapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,9 +35,24 @@ public class ReceptController {
         this.peopleService = peopleService;
     }
 
-    @GetMapping("/all")
+    /* @GetMapping("/all")
     public List<ReceptResponseDTO> getAllRecepts() {
         return receptService.findAll().stream()
+                .map(ReceptMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }   */
+    @GetMapping("/all")
+    public List<ReceptResponseDTO> getAllRecepts() {
+        // Получаем только публичные рецепты
+        List<Recept> publicRecepts = receptService.findAll().stream()
+                .filter(recept -> !recept.isPrivate())
+                .collect(Collectors.toList());
+
+        // Перемешиваем список в случайном порядке
+        Collections.shuffle(publicRecepts);
+
+        // Конвертируем в DTO
+        return publicRecepts.stream()
                 .map(ReceptMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -195,4 +211,31 @@ public class ReceptController {
                 .map(error -> error.getField() + " - " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
     }
+
+
+
+    @GetMapping("/user/{email}")
+    public ResponseEntity<List<ReceptResponseDTO>> getUserRecipes(
+            @PathVariable String email) {
+
+        try {
+            // Получаем пользователя по email
+            Person owner = peopleService.findByEmail(email);
+
+            // Получаем все рецепты этого пользователя (только публичные)
+            List<Recept> userRecipes = receptService.findPublicByOwner(owner);
+
+            // Конвертируем в DTO
+            List<ReceptResponseDTO> response = userRecipes.stream()
+                    .map(this::convertToResponseDTO)
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(response);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
+
 }

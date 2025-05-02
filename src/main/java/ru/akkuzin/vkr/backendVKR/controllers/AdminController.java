@@ -84,7 +84,7 @@ public class AdminController {
             @RequestParam(required = false) String maxDuration,
             @RequestParam(required = false) String minDuration) {
 
-        List<ReceptResponseDTO> results = receptService.advancedSearch(
+        List<ReceptResponseDTO> results = receptService.advancedSearchForAdmin(
                 name, ingredientNames, filterNames, maxDuration, minDuration);
 
         return ResponseEntity.ok(results);

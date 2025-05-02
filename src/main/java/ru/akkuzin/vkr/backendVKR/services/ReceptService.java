@@ -53,6 +53,10 @@ public class ReceptService {
     }
 
 
+    public List<Recept> findPublicByOwner(Person owner) {
+        return receptRepository.findByOwnerAndIsPrivateFalse(owner);
+    }
+
 
     @Transactional
     public void updateIngredients(Recept existing, List<String> ingredientNames, List<String> ingredientQuantities) {
@@ -400,10 +404,53 @@ public class ReceptService {
                     "Invalid time format. Use HH:mm or HH:mm:ss");
         }
 
+
         return receptRepository.findAll(spec).stream()
+                .filter(recept -> !recept.isPrivate())  // Добавляем фильтрацию по isPublic
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
+
+
+
+    public List<ReceptResponseDTO> advancedSearchForAdmin(String name,
+                                                  Set<String> ingredientNames,
+                                                  Set<String> filterNames,
+                                                  String maxDuration,
+                                                  String minDuration) {
+
+        Specification<Recept> spec = Specification.where(null);
+
+        if (name != null && !name.isBlank()) {
+            spec = spec.and(ReceptSpecifications.nameContains(name));
+        }
+        if (ingredientNames != null && !ingredientNames.isEmpty()) {
+            spec = spec.and(ReceptSpecifications.hasIngredients(ingredientNames));
+        }
+        if (filterNames != null && !filterNames.isEmpty()) {
+            spec = spec.and(ReceptSpecifications.hasFilters(filterNames));
+        }
+
+        try {
+            if (maxDuration != null && !maxDuration.isBlank()) {
+                spec = spec.and(ReceptSpecifications.durationLessThanOrEqual(
+                        parseTimeString(maxDuration)));
+            }
+            if (minDuration != null && !minDuration.isBlank()) {
+                spec = spec.and(ReceptSpecifications.durationGreaterThanOrEqual(
+                        parseTimeString(minDuration)));
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid time format. Use HH:mm or HH:mm:ss");
+        }
+
+
+        return receptRepository.findAll(spec).stream()// Добавляем фильтрацию по isPublic
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
+
 
     private Time parseTimeString(String timeStr) {
         if (timeStr == null || timeStr.isBlank()) {
@@ -539,7 +586,9 @@ public class ReceptService {
                 name, ingredientNames, filterNames, maxDuration, minDuration
         );
 
-        List<Recept> allRecepts = receptRepository.findAll(spec);
+        List<Recept> allRecepts = receptRepository.findAll(spec).stream()
+                .filter(recept -> !recept.isPrivate()) // Добавляем фильтрацию по isPublic
+                .collect(Collectors.toList());
 
         return allRecepts.isEmpty()
                 ? Optional.empty()

@@ -162,6 +162,8 @@ public class PeopleService {
         dto.setPatronymic(person.getPatronymic());
         dto.setAbout(person.getAbout());
         dto.setImageUrl(person.getImageUrl());
+        dto.setRole(person.getRole());
+        dto.setActive(person.isActive());
         return dto;
     }
 
@@ -181,6 +183,10 @@ public class PeopleService {
         if (profileDTO.getImageUrl() != null) {
             person.setImageUrl(profileDTO.getImageUrl());
         }
+        if (profileDTO.getRole() != null) {
+            person.setRole(profileDTO.getRole());
+        }
+        person.setActive(profileDTO.isActive());
     }
 
 
